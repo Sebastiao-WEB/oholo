@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "oholo",
+    "slug": "oholo",
+    "version": "1.0.0",
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "oholo",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
