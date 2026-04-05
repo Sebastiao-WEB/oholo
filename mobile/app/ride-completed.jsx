@@ -29,6 +29,8 @@ export default function RideCompletedScreen() {
   const driverVehicleLine = String(params.driverVehicleLine || 'Toyota Vitz branco');
   const driverPlate = String(params.driverPlate || 'NPL-23-458-MZ');
   const driverAvatarUri = String(params.driverAvatarUri || '').trim();
+  const driverUserIdParam = String(params.driverUserId || '').trim();
+  const driverUserIdNum = driverUserIdParam ? parseInt(driverUserIdParam, 10) : Number.NaN;
   const driverPhotoSource =
     driverAvatarUri && (driverAvatarUri.startsWith('http') || driverAvatarUri.startsWith('file:'))
       ? { uri: driverAvatarUri }
@@ -52,6 +54,7 @@ export default function RideCompletedScreen() {
         const dur = Number.parseInt(String(totalTimeMin).replace(/\D/g, ''), 10);
         insertCompletedRide({
           customerUserId: userId,
+          ...(Number.isFinite(driverUserIdNum) ? { driverUserId: driverUserIdNum } : {}),
           rideCode,
           pickupAddress: pickupName,
           dropoffAddress: destinationName,
@@ -83,6 +86,7 @@ export default function RideCompletedScreen() {
     pickupLon,
     destinationLat,
     destinationLon,
+    driverUserIdParam,
   ]);
 
   return (

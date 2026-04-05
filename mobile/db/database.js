@@ -27,6 +27,21 @@ function migrateLocalDatabase(db) {
   if (!rideNames.has('duration_minutes')) {
     db.execSync('ALTER TABLE rides ADD COLUMN duration_minutes INTEGER');
   }
+
+  const providerCols = db.getAllSync('PRAGMA table_info(provider_profiles)');
+  const providerNames = new Set(providerCols.map((r) => r.name));
+  if (!providerNames.has('document_photo_uri')) {
+    db.execSync('ALTER TABLE provider_profiles ADD COLUMN document_photo_uri TEXT');
+  }
+  if (!providerNames.has('license_photo_uri')) {
+    db.execSync('ALTER TABLE provider_profiles ADD COLUMN license_photo_uri TEXT');
+  }
+
+  const vehicleCols = db.getAllSync('PRAGMA table_info(vehicles)');
+  const vehicleNames = new Set(vehicleCols.map((r) => r.name));
+  if (!vehicleNames.has('photo_uri')) {
+    db.execSync('ALTER TABLE vehicles ADD COLUMN photo_uri TEXT');
+  }
 }
 
 /**

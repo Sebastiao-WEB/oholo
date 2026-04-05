@@ -2,9 +2,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useShellMode } from '../../contexts/ShellModeContext';
 import { getFirstSync, initLocalDatabase } from '../../db';
 import { formatPhoneForDisplay } from '../../utils/formatPhone';
 import { avatarFileExists } from '../../utils/profileAvatar';
@@ -20,6 +21,7 @@ const MENU = [
 
 export default function ProfileTabScreen() {
   const router = useRouter();
+  const { mode, setMode } = useShellMode();
   const [profileName, setProfileName] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
   const [profileAvatarUri, setProfileAvatarUri] = useState(null);
@@ -124,6 +126,39 @@ export default function ProfileTabScreen() {
               <Ionicons name="shield-checkmark-outline" size={14} color="#1B7A4C" />
               <Text style={styles.pillText}>Conta verificada</Text>
             </View>
+            {mode === 'provider' ? (
+              <View style={[styles.pill, styles.pillProvider]}>
+                <Ionicons name="briefcase-outline" size={14} color="#006AFF" />
+                <Text style={styles.pillTextProvider}>Modo prestador</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>Experiência na app</Text>
+        <View style={styles.modeCard}>
+          <View style={styles.modeRow}>
+            <View style={styles.modeIconWrap}>
+              <Ionicons name="swap-horizontal-outline" size={22} color="#0A2547" />
+            </View>
+            <View style={styles.modeCopy}>
+              <Text style={styles.modeTitle}>Modo prestador</Text>
+              <Text style={styles.modeSub}>
+                Activo: menu com Painel, Corridas e Delivery para quem trabalha com a Oholo. Desligado: vista de cliente
+                (Início, Atividades, Trabalho).
+              </Text>
+            </View>
+            <Switch
+              value={mode === 'provider'}
+              onValueChange={(v) => {
+                void (async () => {
+                  await setMode(v ? 'provider' : 'customer');
+                  router.replace('/(tabs)');
+                })();
+              }}
+              trackColor={{ false: '#D4DEEA', true: '#8EB8FF' }}
+              thumbColor={mode === 'provider' ? '#006AFF' : '#F4F6FA'}
+            />
           </View>
         </View>
 
@@ -241,6 +276,45 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#1B7A4C',
   },
+  pillProvider: {
+    marginTop: 8,
+    backgroundColor: '#EAF4FF',
+    borderColor: '#B8D4FF',
+  },
+  pillTextProvider: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#006AFF',
+  },
+  modeCard: {
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E0E8F2',
+    padding: 14,
+    marginBottom: 4,
+    shadowColor: '#00000022',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  modeIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F0F4FA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeCopy: { flex: 1, minWidth: 0 },
+  modeTitle: { fontSize: 16, fontWeight: '800', color: '#0A2547' },
+  modeSub: { marginTop: 4, fontSize: 13, color: '#51627B', lineHeight: 18 },
   sectionLabel: {
     marginTop: 22,
     marginBottom: 10,

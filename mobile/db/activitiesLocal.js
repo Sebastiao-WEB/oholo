@@ -174,6 +174,242 @@ export function listAllActivitiesForUser(customerUserId) {
 }
 
 /**
+ * @param {Record<string, unknown>} row
+ */
+function providerRideOutcome(row) {
+  const st = String(row.status || '');
+  if (st === 'completed') {
+    return { status: 'completed', statusLabel: 'Concluída' };
+  }
+  const r = String(row.cancellation_reason || '').trim();
+  const lower = r.toLowerCase();
+  if (lower.includes('motorista')) {
+    return { status: 'cancelled', statusLabel: 'Cancelada pelo motorista' };
+  }
+  if (lower.includes('cliente') || lower.includes('passageiro') || lower.includes('utilizador')) {
+    return { status: 'cancelled', statusLabel: 'Cancelada pelo cliente' };
+  }
+  if (r) {
+    const short = r.length > 42 ? `${r.slice(0, 40)}…` : r;
+    return { status: 'cancelled', statusLabel: `Cancelada · ${short}` };
+  }
+  return { status: 'cancelled', statusLabel: 'Cancelada' };
+}
+
+/**
+ * @param {Record<string, unknown>} row
+ */
+function providerDeliveryOutcome(row) {
+  const st = String(row.status || '');
+  if (st === 'delivered') {
+    return { status: 'completed', statusLabel: 'Concluída (entregue)' };
+  }
+  if (st === 'cancelled') {
+    const r = String(row.cancellation_reason || '').trim();
+    const lower = r.toLowerCase();
+    if (lower.includes('entregador') || lower.includes('courier')) {
+      return { status: 'cancelled', statusLabel: 'Cancelada pelo entregador' };
+    }
+    if (lower.includes('cliente')) {
+      return { status: 'cancelled', statusLabel: 'Cancelada pelo cliente' };
+    }
+    if (r) {
+      const short = r.length > 42 ? `${r.slice(0, 40)}…` : r;
+      return { status: 'cancelled', statusLabel: `Cancelada · ${short}` };
+    }
+    return { status: 'cancelled', statusLabel: 'Cancelada' };
+  }
+  return { status: 'active', statusLabel: 'Em curso' };
+}
+
+/**
+ * Corrida na perspectiva do motorista (histórico prestador).
+ * @param {Record<string, unknown>} row
+ */
+export function mapRideRowToProviderActivity(row) {
+  const pickup = String(row.pickup_address ?? '').trim();
+  const drop = String(row.dropoff_address ?? '').trim();
+  const displayAt = row.completed_at || row.cancelled_at || row.requested_at;
+  const { date, time } = formatPtDateTime(displayAt);
+  const stDb = String(row.status || 'completed');
+  const fare = stDb === 'cancelled' ? row.estimated_fare : row.final_fare ?? row.estimated_fare;
+  const distKm = row.route_distance_km;
+  const distStr =
+    distKm != null && Number.isFinite(Number(distKm))
+      ? `${Number(distKm).toFixed(1).replace('.', ',')} km`
+      : null;
+  const durMin = row.duration_minutes;
+  const durStr = durMin != null && Number.isFinite(Number(durMin)) ? `${Math.round(Number(durMin))} min` : null;
+  const customer = String(row.customer_name ?? '').trim() || 'Cliente';
+  const ui = providerRideOutcome(row);
+  const dropShort = drop.length > 40 ? `${drop.slice(0, 38)}…` : drop;
+  return {
+    id: `ride-${row.id}`,
+    type: 'ride',
+    title: drop ? `Corrida — ${dropShort}` : 'Corrida',
+    subtitle:
+      pickup && drop ? `Cliente: ${customer} · ${pickup} → ${drop}` : `Cliente: ${customer}`,
+    date,
+    time,
+    status: ui.status,
+    statusLabel: ui.statusLabel,
+    amount: fare != null && Number.isFinite(Number(fare)) ? `${Math.round(Number(fare))} MT` : null,
+    paymentMethod: row.payment_method ? String(row.payment_method) : null,
+    rideType: row.ride_type ? String(row.ride_type) : null,
+    distanceKm: distStr,
+    durationMin: durStr,
+    rideCode: row.ride_code ? String(row.ride_code) : null,
+    pickupName: pickup,
+    destinationName: drop,
+    cancellationReason: row.cancellation_reason ? String(row.cancellation_reason) : null,
+    customerName: customer,
+    perspective: 'provider',
+  };
+}
+
+/**
+ * Delivery na perspectiva do entregador.
+ * @param {Record<string, unknown>} row
+ */
+export function mapDeliveryRowToProviderActivity(row) {
+  const pickup = String(row.pickup_address ?? '').trim();
+  const drop = String(row.dropoff_address ?? '').trim();
+  const at = row.delivered_at || row.cancelled_at || row.requested_at;
+  const { date, time } = formatPtDateTime(at);
+  const desc = String(row.item_description || '').trim();
+  const shortDesc = desc.length > 40 ? `${desc.slice(0, 38)}…` : desc;
+  const customer = String(row.customer_name ?? '').trim() || 'Cliente';
+  const ui = providerDeliveryOutcome(row);
+  return {
+    id: `delivery-${row.id}`,
+    type: 'delivery',
+    title: shortDesc ? `Delivery — ${shortDesc}` : 'Delivery',
+    subtitle:
+      pickup && drop ? `Cliente: ${customer} · ${pickup} → ${drop}` : `Cliente: ${customer}`,
+    date,
+    time,
+    status: ui.status,
+    statusLabel: ui.statusLabel,
+    amount:
+      row.delivery_fee != null && Number.isFinite(Number(row.delivery_fee))
+        ? `${Math.round(Number(row.delivery_fee))} MT`
+        : null,
+    paymentMethod: null,
+    pickupName: pickup,
+    destinationName: drop,
+    itemDescription: desc,
+    deliveryCode: row.delivery_code ? String(row.delivery_code) : null,
+    cancellationReason: row.cancellation_reason ? String(row.cancellation_reason) : null,
+    customerName: customer,
+    perspective: 'provider',
+  };
+}
+
+/**
+ * Corridas e entregas em que o utilizador foi motorista / entregador.
+ * @param {number} providerUserId
+ */
+export function listProviderActivitiesForUser(providerUserId) {
+  initLocalDatabase();
+  const uid = Number(providerUserId);
+  if (!Number.isFinite(uid)) {
+    return [];
+  }
+
+  const rideRows = getAllSync(
+    `SELECT r.id, r.ride_code, r.estimated_fare, r.final_fare, r.status, r.requested_at, r.completed_at,
+            r.cancelled_at, r.cancellation_reason,
+            r.payment_method, r.ride_type, r.route_distance_km, r.duration_minutes,
+            pl.address_line AS pickup_address, dl.address_line AS dropoff_address,
+            u.name AS customer_name,
+            datetime(COALESCE(r.completed_at, r.cancelled_at, r.requested_at, r.created_at)) AS sort_ts
+     FROM rides r
+     JOIN locations pl ON pl.id = r.pickup_location_id
+     JOIN locations dl ON dl.id = r.dropoff_location_id
+     JOIN users u ON u.id = r.customer_user_id
+     WHERE r.driver_user_id = ?
+       AND r.status IN ('completed', 'cancelled')
+     ORDER BY sort_ts DESC
+     LIMIT 100`,
+    [uid]
+  );
+
+  const deliveryRows = getAllSync(
+    `SELECT d.id, d.delivery_code, d.item_description, d.delivery_fee, d.status, d.requested_at,
+            d.delivered_at, d.cancelled_at, d.cancellation_reason,
+            pl.address_line AS pickup_address, dl.address_line AS dropoff_address,
+            u.name AS customer_name,
+            datetime(COALESCE(d.delivered_at, d.cancelled_at, d.requested_at, d.created_at)) AS sort_ts
+     FROM deliveries d
+     JOIN locations pl ON pl.id = d.pickup_location_id
+     JOIN locations dl ON dl.id = d.dropoff_location_id
+     JOIN users u ON u.id = d.customer_user_id
+     WHERE d.courier_user_id = ?
+       AND d.status IN ('delivered', 'cancelled')
+     ORDER BY sort_ts DESC
+     LIMIT 100`,
+    [uid]
+  );
+
+  const merged = [
+    ...rideRows.map((row) => ({
+      ...mapRideRowToProviderActivity(row),
+      _sortTs: String(row.sort_ts || ''),
+    })),
+    ...deliveryRows.map((row) => ({
+      ...mapDeliveryRowToProviderActivity(row),
+      _sortTs: String(row.sort_ts || ''),
+    })),
+  ];
+
+  merged.sort((a, b) => b._sortTs.localeCompare(a._sortTs));
+  return merged.map(({ _sortTs, ...act }) => act);
+}
+
+/**
+ * @param {number} rideId
+ * @param {number} driverUserId
+ */
+export function loadRideAsProviderActivity(rideId, driverUserId) {
+  initLocalDatabase();
+  const row = getFirstSync(
+    `SELECT r.id, r.ride_code, r.estimated_fare, r.final_fare, r.status, r.requested_at, r.completed_at,
+            r.cancelled_at, r.cancellation_reason,
+            r.payment_method, r.ride_type, r.route_distance_km, r.duration_minutes,
+            pl.address_line AS pickup_address, dl.address_line AS dropoff_address,
+            u.name AS customer_name
+     FROM rides r
+     JOIN locations pl ON pl.id = r.pickup_location_id
+     JOIN locations dl ON dl.id = r.dropoff_location_id
+     JOIN users u ON u.id = r.customer_user_id
+     WHERE r.id = ? AND r.driver_user_id = ?`,
+    [rideId, driverUserId]
+  );
+  return row ? mapRideRowToProviderActivity(row) : null;
+}
+
+/**
+ * @param {number} deliveryId
+ * @param {number} courierUserId
+ */
+export function loadDeliveryAsProviderActivity(deliveryId, courierUserId) {
+  initLocalDatabase();
+  const row = getFirstSync(
+    `SELECT d.id, d.delivery_code, d.item_description, d.delivery_fee, d.status, d.requested_at,
+            d.delivered_at, d.cancelled_at, d.cancellation_reason,
+            pl.address_line AS pickup_address, dl.address_line AS dropoff_address,
+            u.name AS customer_name
+     FROM deliveries d
+     JOIN locations pl ON pl.id = d.pickup_location_id
+     JOIN locations dl ON dl.id = d.dropoff_location_id
+     JOIN users u ON u.id = d.customer_user_id
+     WHERE d.id = ? AND d.courier_user_id = ?`,
+    [deliveryId, courierUserId]
+  );
+  return row ? mapDeliveryRowToProviderActivity(row) : null;
+}
+
+/**
  * @param {number} deliveryId
  * @param {number} customerUserId
  */

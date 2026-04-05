@@ -111,6 +111,7 @@ export function loadRideAsActivity(rideId, customerUserId) {
  */
 export function insertRideRecord({
   customerUserId,
+  driverUserId,
   rideCode,
   pickupAddress,
   dropoffAddress,
@@ -168,15 +169,19 @@ export function insertRideRecord({
     const dist = routeDistanceKm != null ? Number(routeDistanceKm) : null;
     const dur = durationMinutes != null ? Math.round(Number(durationMinutes)) : null;
 
+    const driverId =
+      driverUserId != null && Number.isFinite(Number(driverUserId)) ? Number(driverUserId) : null;
+
     const ins = db.runSync(
       `INSERT INTO rides (
-        ride_code, customer_user_id, pickup_location_id, dropoff_location_id,
+        ride_code, customer_user_id, driver_user_id, pickup_location_id, dropoff_location_id,
         estimated_fare, final_fare, status, requested_at, completed_at, cancelled_at, cancellation_reason,
         payment_method, ride_type, route_distance_km, duration_minutes, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
         code,
         customerUserId,
+        driverId,
         pickupLocId,
         dropLocId,
         Number.isFinite(est) ? est : 0,

@@ -1,7 +1,12 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getProviderProfileForUser, initLocalDatabase } from '../../db';
+import { getSessionUserId } from '../../utils/session';
 
 const OPTIONS = [
   {
@@ -11,6 +16,7 @@ const OPTIONS = [
     icon: 'car-sport-outline',
     iconBg: '#EAF4FF',
     iconColor: '#006AFF',
+    action: 'register',
   },
   {
     key: 'courier',
@@ -19,6 +25,7 @@ const OPTIONS = [
     icon: 'bicycle-outline',
     iconBg: '#E8FAFC',
     iconColor: '#48CAE4',
+    action: 'register',
   },
   {
     key: 'docs',
@@ -27,6 +34,7 @@ const OPTIONS = [
     icon: 'document-text-outline',
     iconBg: '#E8EEF5',
     iconColor: '#0A2547',
+    action: 'docs',
   },
   {
     key: 'support',
@@ -35,18 +43,92 @@ const OPTIONS = [
     icon: 'chatbubbles-outline',
     iconBg: '#F0F4FA',
     iconColor: '#51627B',
+    action: 'support',
   },
 ];
 
-function showSoon() {
+function availabilityLabel(status) {
+  if (status === 'available') return 'Disponível para pedidos';
+  if (status === 'busy') return 'Ocupado';
+  return 'Offline';
+}
+
+function typeLabel(t) {
+  if (t === 'courier') return 'Entregador';
+  if (t === 'both') return 'Motorista e entregador';
+  return 'Motorista';
+}
+
+function showDocs() {
   Alert.alert(
-    'Oholo',
-    'Esta opção estará disponível em breve. Na fase piloto em Nampula, a equipa Oholo pode orientar o seu registo presencial ou por canais oficiais.'
+    'Documentos e requisitos',
+    '• Documento de identificação válido\n• Carta de condução (motorista)\n• Veículo em bom estado e seguro conforme lei\n• Conta Oholo com telefone verificado\n\nNa piloto, o registo é feito na app; a Oholo pode validar dados presencialmente em Nampula.'
+  );
+}
+
+function showSupport() {
+  Alert.alert(
+    'Contacto',
+    'Para parcerias e o piloto em Nampula, use os canais oficiais Oholo (redes sociais ou email da equipa). Em breve: chat na app.'
   );
 }
 
 export default function WorkTabScreen() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [sessionUserId, setSessionUserId] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        setLoading(true);
+        try {
+          initLocalDatabase();
+          const uid = await getSessionUserId();
+          if (!active) return;
+          setSessionUserId(uid);
+          if (uid != null) {
+            const p = getProviderProfileForUser(uid);
+            setProfile(p || null);
+          } else {
+            setProfile(null);
+          }
+        } finally {
+          if (active) setLoading(false);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
+
+  const onOptionPress = (action) => {
+    if (action === 'register') {
+      if (sessionUserId == null) {
+        Alert.alert('Iniciar sessão', 'Entre na conta Oholo para registar o perfil de prestador.', [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Entrar', onPress: () => router.push('/login') },
+        ]);
+        return;
+      }
+      if (profile) {
+        router.push('/provider-hub');
+        return;
+      }
+      router.push('/provider-register');
+      return;
+    }
+    if (action === 'docs') {
+      showDocs();
+      return;
+    }
+    if (action === 'support') {
+      showSupport();
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -62,6 +144,54 @@ export default function WorkTabScreen() {
         <Text style={styles.screenSubtitle}>
           Junte-se como motorista ou entregador e ganhe com a mobilidade na sua cidade.
         </Text>
+
+        {loading ? (
+          <View style={styles.loadingBlock}>
+            <ActivityIndicator size="small" color="#006AFF" />
+          </View>
+        ) : null}
+
+        {!loading && sessionUserId == null ? (
+          <View style={styles.banner}>
+            <Ionicons name="log-in-outline" size={22} color="#0A2547" />
+            <Text style={styles.bannerText}>
+              Inicie sessão para criar o perfil de motorista ou entregador e gerir disponibilidade na app.
+            </Text>
+            <Pressable style={styles.bannerBtn} onPress={() => router.push('/login')}>
+              <Text style={styles.bannerBtnText}>Entrar</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {!loading && sessionUserId != null && profile ? (
+          <View style={styles.activeCard}>
+            <View style={styles.activeHeader}>
+              <Ionicons name="checkmark-circle" size={28} color="#1B7A4C" />
+              <View style={styles.activeCopy}>
+                <Text style={styles.activeTitle}>Perfil de prestador activo</Text>
+                <Text style={styles.activeSub}>
+                  {typeLabel(String(profile.provider_type))} · {availabilityLabel(String(profile.availability_status))}
+                </Text>
+              </View>
+            </View>
+            <Pressable style={styles.hubBtn} onPress={() => router.push('/provider-hub')}>
+              <Text style={styles.hubBtnText}>Abrir painel de prestador</Text>
+              <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        ) : null}
+
+        {!loading && sessionUserId != null && !profile ? (
+          <View style={styles.ctaCard}>
+            <Text style={styles.ctaTitle}>Ainda não é parceiro Oholo?</Text>
+            <Text style={styles.ctaBody}>
+              Registe documento e veículo para aparecer na rede local (demo SQLite). Pode ser motorista, entregador ou ambos.
+            </Text>
+            <Pressable style={styles.ctaBtn} onPress={() => router.push('/provider-register')}>
+              <Text style={styles.ctaBtnText}>Activar perfil de prestador</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View style={styles.heroCard}>
           <View style={styles.heroBadge}>
@@ -92,11 +222,7 @@ export default function WorkTabScreen() {
 
         <View style={styles.list}>
           {OPTIONS.map((item) => (
-            <Pressable
-              key={item.key}
-              style={styles.optionCard}
-              onPress={showSoon}
-            >
+            <Pressable key={item.key} style={styles.optionCard} onPress={() => onOptionPress(item.action)}>
               <View style={[styles.optionIconWrap, { backgroundColor: item.iconBg }]}>
                 <Ionicons name={item.icon} size={24} color={item.iconColor} />
               </View>
@@ -112,13 +238,9 @@ export default function WorkTabScreen() {
         <View style={styles.infoBanner}>
           <Ionicons name="information-circle-outline" size={20} color="#0A2547" />
           <Text style={styles.infoText}>
-            O processo completo de candidatura digital será activado nas próximas versões da app.
+            O painel de prestador (disponibilidade e veículos) está activo nesta versão. Pedidos em tempo real chegam com a API.
           </Text>
         </View>
-
-        <Pressable style={styles.primaryButton} onPress={showSoon}>
-          <Text style={styles.primaryButtonText}>Quero candidatar-me</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -155,12 +277,87 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 28,
   },
+  loadingBlock: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   screenSubtitle: {
     fontSize: 15,
     color: '#6C7B90',
     lineHeight: 22,
     marginBottom: 16,
   },
+  banner: {
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#2B63B8',
+    padding: 14,
+    marginBottom: 16,
+    backgroundColor: '#F6F8FC',
+    gap: 10,
+  },
+  bannerText: {
+    fontSize: 14,
+    color: '#0A2547',
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  bannerBtn: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#006AFF',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+  },
+  bannerBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  activeCard: {
+    borderRadius: 16,
+    backgroundColor: '#0A2547',
+    padding: 16,
+    marginBottom: 16,
+  },
+  activeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  activeCopy: { flex: 1 },
+  activeTitle: { fontSize: 17, fontWeight: '800', color: '#FFFFFF' },
+  activeSub: { marginTop: 4, fontSize: 14, fontWeight: '600', color: '#C8D6E8' },
+  hubBtn: {
+    marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#006AFF',
+    height: 48,
+    borderRadius: 10,
+  },
+  hubBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
+  ctaCard: {
+    borderRadius: 16,
+    backgroundColor: '#EAF4FF',
+    borderWidth: 2,
+    borderColor: '#006AFF',
+    padding: 16,
+    marginBottom: 16,
+  },
+  ctaTitle: { fontSize: 17, fontWeight: '800', color: '#0A2547' },
+  ctaBody: { marginTop: 8, fontSize: 14, color: '#395271', lineHeight: 20 },
+  ctaBtn: {
+    marginTop: 14,
+    backgroundColor: '#006AFF',
+    height: 48,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   heroCard: {
     borderRadius: 20,
     backgroundColor: '#0A2547',
@@ -280,18 +477,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     lineHeight: 20,
-  },
-  primaryButton: {
-    marginTop: 16,
-    height: 50,
-    borderRadius: 10,
-    backgroundColor: '#006AFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '800',
   },
 });

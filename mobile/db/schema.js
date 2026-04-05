@@ -6,7 +6,7 @@
 export const DB_NAME = 'oholo_local.db';
 
 /** Incrementar quando alterar o DDL abaixo (ver database.js). */
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const DDL = `
 PRAGMA foreign_keys = ON;
@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS provider_profiles (
   provider_type TEXT NOT NULL CHECK (provider_type IN ('driver','courier','both')),
   document_number TEXT NOT NULL,
   license_number TEXT,
+  document_photo_uri TEXT,
+  license_photo_uri TEXT,
   availability_status TEXT NOT NULL DEFAULT 'offline' CHECK (availability_status IN ('available','busy','offline')),
   rating_avg REAL,
   created_at TEXT DEFAULT (datetime('now')),
@@ -44,6 +46,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   model TEXT NOT NULL,
   plate_number TEXT NOT NULL UNIQUE,
   color TEXT NOT NULL,
+  photo_uri TEXT,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive','maintenance')),
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))

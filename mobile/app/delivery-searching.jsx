@@ -186,6 +186,7 @@ export default function DeliverySearchingScreen() {
       const riderParams =
         assignedDriver && typeof assignedDriver.userId === 'number'
           ? {
+              courierUserId: String(assignedDriver.userId),
               riderName: assignedDriver.name,
               riderVehicle: assignedDriver.vehicleLine,
               riderPlate: assignedDriver.plateNumber,

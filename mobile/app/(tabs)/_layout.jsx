@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { useShellMode } from '../../contexts/ShellModeContext';
+
 const COLORS = {
   navy: '#0A2547',
   blue: '#006AFF',
@@ -8,6 +10,9 @@ const COLORS = {
 };
 
 export default function TabsLayout() {
+  const { mode, ready } = useShellMode();
+  const isProvider = ready && mode === 'provider';
+
   return (
     <Tabs
       screenOptions={{
@@ -33,14 +38,17 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          title: isProvider ? 'Painel' : 'Inicio',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name={isProvider ? 'speedometer-outline' : 'home'} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="activities"
         options={{
           title: 'Atividades',
+          href: isProvider ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
         }}
       />
@@ -48,7 +56,24 @@ export default function TabsLayout() {
         name="work"
         options={{
           title: 'Trabalho',
+          href: isProvider ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="briefcase-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="provider-rides"
+        options={{
+          title: 'Corridas',
+          href: isProvider ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Ionicons name="car-sport-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="provider-delivery"
+        options={{
+          title: 'Delivery',
+          href: isProvider ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Ionicons name="bicycle-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

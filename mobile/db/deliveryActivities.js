@@ -5,6 +5,7 @@ import { getFirstSync, getLocalDatabase, initLocalDatabase } from './database';
  */
 export function insertDeliveryRecord({
   customerUserId,
+  courierUserId,
   deliveryCode,
   pickupAddress,
   dropoffAddress,
@@ -54,15 +55,18 @@ export function insertDeliveryRecord({
 
     const now = new Date().toISOString();
     const fee = Number(deliveryFee);
+    const courierId =
+      courierUserId != null && Number.isFinite(Number(courierUserId)) ? Number(courierUserId) : null;
     const ins = db.runSync(
       `INSERT INTO deliveries (
         delivery_code, customer_user_id, courier_user_id, vehicle_id,
         pickup_location_id, dropoff_location_id, item_description, delivery_fee,
         status, requested_at, delivered_at, cancelled_at, cancellation_reason, updated_at
-      ) VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      ) VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       [
         code,
         customerUserId,
+        courierId,
         pickupLocId,
         dropLocId,
         String(itemDescription || 'Delivery'),

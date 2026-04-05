@@ -22,7 +22,10 @@ export {
 } from './deliveryActivities';
 export {
   listAllActivitiesForUser,
+  listProviderActivitiesForUser,
   loadDeliveryAsActivity,
+  loadDeliveryAsProviderActivity,
+  loadRideAsProviderActivity,
   loadTicketAsActivity,
 } from './activitiesLocal';
 export {
@@ -31,3 +34,14 @@ export {
   pickRandomMapDriver,
   syntheticCoordinateNearPickup,
 } from './providerDrivers';
+export {
+  addVehicleForUser,
+  createProviderWithFirstVehicle,
+  getProviderProfileForUser,
+  listVehiclesForUser,
+  setProviderAvailabilityByUserId,
+  setProviderDocumentPhotoUri,
+  setProviderLicensePhotoUri,
+  setVehiclePhotoUri,
+  setVehicleStatusForUser,
+} from './providerAccount';

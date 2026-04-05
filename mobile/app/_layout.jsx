@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 
+import { ShellModeProvider } from '../contexts/ShellModeContext';
 import { initLocalDatabase } from '../db';
 
 export default function RootLayout() {
@@ -13,6 +14,7 @@ export default function RootLayout() {
   }, []);
 
   return (
+    <ShellModeProvider>
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen
         name="ride-in-progress"
@@ -23,5 +25,6 @@ export default function RootLayout() {
         options={{ gestureEnabled: false, fullScreenGestureEnabled: false }}
       />
     </Stack>
+    </ShellModeProvider>
   );
 }

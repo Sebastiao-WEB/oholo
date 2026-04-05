@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { SHELL_MODE_STORAGE_KEY } from './shellMode';
+
 const SESSION_USER_ID_KEY = 'oholo_session_user_id';
 
 export async function setSessionUserId(userId) {
@@ -16,5 +18,5 @@ export async function getSessionUserId() {
 }
 
 export async function clearSession() {
-  await AsyncStorage.removeItem(SESSION_USER_ID_KEY);
+  await AsyncStorage.multiRemove([SESSION_USER_ID_KEY, SHELL_MODE_STORAGE_KEY]);
 }

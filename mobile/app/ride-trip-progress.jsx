@@ -32,6 +32,7 @@ export default function RideTripProgressScreen() {
   const driverPlate = String(params.driverPlate || '—');
   const driverAvatarUri = String(params.driverAvatarUri || '').trim();
   const driverPhone = String(params.driverPhone || '').trim();
+  const driverUserId = String(params.driverUserId || '').trim();
 
   const pickupCoordinate = useMemo(
     () => ({ latitude: pickupLat, longitude: pickupLon }),
@@ -145,6 +146,7 @@ export default function RideTripProgressScreen() {
           driverName,
           driverVehicleLine,
           driverPlate,
+          ...(driverUserId ? { driverUserId } : {}),
           ...(driverAvatarUri ? { driverAvatarUri } : {}),
           ...(driverPhone ? { driverPhone } : {}),
         },
@@ -170,6 +172,7 @@ export default function RideTripProgressScreen() {
     driverName,
     driverVehicleLine,
     driverPlate,
+    driverUserId,
     driverAvatarUri,
     driverPhone,
   ]);

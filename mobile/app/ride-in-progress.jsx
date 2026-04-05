@@ -45,6 +45,7 @@ export default function RideInProgressScreen() {
   const driverPlate = String(params.driverPlate || '—');
   const driverAvatarUri = String(params.driverAvatarUri || '').trim();
   const driverPhone = String(params.driverPhone || '').trim();
+  const driverUserId = String(params.driverUserId || '').trim();
 
   const driverPhotoSource =
     driverAvatarUri && (driverAvatarUri.startsWith('http') || driverAvatarUri.startsWith('file:'))
@@ -180,6 +181,7 @@ export default function RideInProgressScreen() {
           driverName,
           driverVehicleLine,
           driverPlate,
+          ...(driverUserId ? { driverUserId } : {}),
           ...(driverAvatarUri ? { driverAvatarUri } : {}),
           ...(driverPhone ? { driverPhone } : {}),
         },
@@ -205,6 +207,7 @@ export default function RideInProgressScreen() {
     driverName,
     driverVehicleLine,
     driverPlate,
+    driverUserId,
     driverAvatarUri,
     driverPhone,
   ]);

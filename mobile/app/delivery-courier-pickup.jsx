@@ -50,6 +50,7 @@ export default function DeliveryCourierPickupScreen() {
   const riderAvatarUri = String(params.riderAvatarUri || '').trim();
   const riderVehicleType = String(params.riderVehicleType || 'motorbike');
   const riderPhone = String(params.riderPhone || '').trim();
+  const courierUserId = String(params.courierUserId || '').trim();
 
   const riderPhotoSource =
     riderAvatarUri && (riderAvatarUri.startsWith('http') || riderAvatarUri.startsWith('file:'))
@@ -193,6 +194,7 @@ export default function DeliveryCourierPickupScreen() {
           riderName,
           riderVehicle,
           riderPlate,
+          ...(courierUserId ? { courierUserId } : {}),
           ...(riderAvatarUri ? { riderAvatarUri } : {}),
           ...(riderPhone ? { riderPhone } : {}),
         },
@@ -222,6 +224,7 @@ export default function DeliveryCourierPickupScreen() {
     riderName,
     riderVehicle,
     riderPlate,
+    courierUserId,
     riderAvatarUri,
     riderPhone,
   ]);

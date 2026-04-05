@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   initLocalDatabase,
   loadDeliveryAsActivity,
+  loadDeliveryAsProviderActivity,
   loadRideAsActivity,
+  loadRideAsProviderActivity,
   loadTicketAsActivity,
 } from '../db';
 import { deliveryRouteParts, splitRouteSubtitle, statusStyle, typeMeta } from '../data/mockActivities';
@@ -17,6 +19,8 @@ export default function ActivityDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = String(params.id || '');
+  const perspective = String(params.perspective || '');
+  const isProviderPerspective = perspective === 'provider';
   const [activity, setActivity] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,9 +46,13 @@ export default function ActivityDetailScreen() {
             }
             let act = null;
             if (rideMatch) {
-              act = loadRideAsActivity(Number(rideMatch[1]), userId);
+              act = isProviderPerspective
+                ? loadRideAsProviderActivity(Number(rideMatch[1]), userId)
+                : loadRideAsActivity(Number(rideMatch[1]), userId);
             } else if (deliveryMatch) {
-              act = loadDeliveryAsActivity(Number(deliveryMatch[1]), userId);
+              act = isProviderPerspective
+                ? loadDeliveryAsProviderActivity(Number(deliveryMatch[1]), userId)
+                : loadDeliveryAsActivity(Number(deliveryMatch[1]), userId);
             } else if (ticketMatch) {
               act = loadTicketAsActivity(Number(ticketMatch[1]), userId);
             }
@@ -68,7 +76,7 @@ export default function ActivityDetailScreen() {
       return () => {
         active = false;
       };
-    }, [id])
+    }, [id, isProviderPerspective])
   );
 
   const meta = activity ? typeMeta(activity.type) : null;
@@ -218,6 +226,15 @@ export default function ActivityDetailScreen() {
                 </Text>
               </View>
             </View>
+            {activity.customerName ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="person-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Cliente</Text>
+                  <Text style={styles.metricValue}>{activity.customerName}</Text>
+                </View>
+              </View>
+            ) : null}
             {isTicket && activity.passengerName ? (
               <View style={styles.metricRow}>
                 <Ionicons name="person-outline" size={17} color="#0A2547" />

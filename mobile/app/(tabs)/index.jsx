@@ -5,29 +5,40 @@ import { useCallback, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useShellMode } from '../../contexts/ShellModeContext';
 import KeyboardAvoidingForm from '../../components/KeyboardAvoidingForm';
-import { getFirstSync, initLocalDatabase, listRideActivitiesForUser } from '../../db';
+import { getFirstSync, initLocalDatabase, listProviderActivitiesForUser, listRideActivitiesForUser } from '../../db';
 import { formatPhoneForDisplay } from '../../utils/formatPhone';
 import { avatarFileExists } from '../../utils/profileAvatar';
 import { getSessionUserId } from '../../utils/session';
 
-const quickActions = [
+const CUSTOMER_QUICK_ACTIONS = [
   { key: 'ride', title: 'Pedir\ncorrida', bg: '#0A2547', icon: 'car-outline' },
   { key: 'delivery', title: 'Pedir\ndelivery', bg: '#3A84FF', icon: 'bicycle-outline' },
   { key: 'ticket', title: 'Comprar\nbilhete', bg: '#48CAE4', icon: 'ticket-outline' },
   { key: 'work', title: 'Trabalhar com\na plataforma', bg: '#0A2547', icon: 'people-outline' },
 ];
 
+const PROVIDER_QUICK_ACTIONS = [
+  { key: 'hub', title: 'Painel\ndisponibilidade', bg: '#0A2547', icon: 'construct-outline' },
+  { key: 'rides_tab', title: 'Corridas\n(prestador)', bg: '#3A84FF', icon: 'car-sport-outline' },
+  { key: 'delivery_tab', title: 'Delivery\n(prestador)', bg: '#48CAE4', icon: 'bicycle-outline' },
+  { key: 'history', title: 'Ver\nhistórico', bg: '#395271', icon: 'time-outline' },
+];
+
 export default function HomeTabScreen() {
   const router = useRouter();
+  const { mode } = useShellMode();
+  const isProvider = mode === 'provider';
   const [greetingName, setGreetingName] = useState('');
   const [phoneLine, setPhoneLine] = useState('');
   const [headerAvatarUri, setHeaderAvatarUri] = useState(null);
-  const [recentRides, setRecentRides] = useState([]);
+  const [recentActivityPreview, setRecentActivityPreview] = useState([]);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      const asProvider = mode === 'provider';
       (async () => {
         try {
           initLocalDatabase();
@@ -39,7 +50,7 @@ export default function HomeTabScreen() {
             setGreetingName('');
             setPhoneLine('');
             setHeaderAvatarUri(null);
-            setRecentRides([]);
+            setRecentActivityPreview([]);
             return;
           }
           const row = getFirstSync('SELECT name, phone, avatar_uri FROM users WHERE id = ?', [userId]);
@@ -48,7 +59,7 @@ export default function HomeTabScreen() {
               setGreetingName('');
               setPhoneLine('');
               setHeaderAvatarUri(null);
-              setRecentRides([]);
+              setRecentActivityPreview([]);
             }
             return;
           }
@@ -65,9 +76,11 @@ export default function HomeTabScreen() {
           }
           setHeaderAvatarUri(av || null);
 
-          const rides = listRideActivitiesForUser(userId).slice(0, 3);
+          const preview = asProvider
+            ? listProviderActivitiesForUser(userId).slice(0, 5)
+            : listRideActivitiesForUser(userId).slice(0, 3);
           if (active) {
-            setRecentRides(rides);
+            setRecentActivityPreview(preview);
           }
         } catch (e) {
           console.error(e);
@@ -75,18 +88,49 @@ export default function HomeTabScreen() {
             setGreetingName('');
             setPhoneLine('');
             setHeaderAvatarUri(null);
-            setRecentRides([]);
+            setRecentActivityPreview([]);
           }
         }
       })();
       return () => {
         active = false;
       };
-    }, [])
+    }, [mode])
   );
 
   const greetingText = greetingName ? `Olá, ${greetingName}` : 'Olá';
   const phoneText = phoneLine || '—';
+  const quickActions = isProvider ? PROVIDER_QUICK_ACTIONS : CUSTOMER_QUICK_ACTIONS;
+
+  const onQuickAction = (item) => {
+    if (item.key === 'ride') {
+      router.push('/ride-request');
+      return;
+    }
+    if (item.key === 'delivery') {
+      router.push('/delivery-request');
+      return;
+    }
+    if (item.key === 'work') {
+      router.push('/(tabs)/work');
+      return;
+    }
+    if (item.key === 'hub') {
+      router.push('/provider-hub');
+      return;
+    }
+    if (item.key === 'rides_tab') {
+      router.push('/(tabs)/provider-rides');
+      return;
+    }
+    if (item.key === 'delivery_tab') {
+      router.push('/(tabs)/provider-delivery');
+      return;
+    }
+    if (item.key === 'history') {
+      router.push('/provider-history');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -109,6 +153,12 @@ export default function HomeTabScreen() {
         <Text style={styles.greeting}>{greetingText}</Text>
         <Text style={styles.phoneLine}>{phoneText}</Text>
         <Text style={styles.location}>Nampula, Moçambique</Text>
+        {isProvider ? (
+          <View style={styles.modeBadge}>
+            <Ionicons name="briefcase-outline" size={14} color="#006AFF" />
+            <Text style={styles.modeBadgeText}>Modo prestador · separadores adaptados</Text>
+          </View>
+        ) : null}
       </View>
 
       <KeyboardAvoidingForm
@@ -116,31 +166,23 @@ export default function HomeTabScreen() {
         scrollStyle={styles.scroll}
         contentContainerStyle={styles.contentContainer}
       >
-        <View style={styles.searchBox}>
-          <Ionicons name="search-outline" size={20} color="#6B7D96" />
-          <TextInput
-            placeholder="Para onde quer ir ou o que deseja fazer?"
-            placeholderTextColor="#6B7D96"
-            style={styles.searchInput}
-          />
-        </View>
+        {!isProvider ? (
+          <View style={styles.searchBox}>
+            <Ionicons name="search-outline" size={20} color="#6B7D96" />
+            <TextInput
+              placeholder="Para onde quer ir ou o que deseja fazer?"
+              placeholderTextColor="#6B7D96"
+              style={styles.searchInput}
+            />
+          </View>
+        ) : null}
 
-        <View style={styles.grid}>
+        <View style={[styles.grid, isProvider && styles.gridProviderTop]}>
           {quickActions.map((item) => (
             <Pressable
               key={item.key}
               style={[styles.actionCard, { backgroundColor: item.bg }]}
-              onPress={() => {
-                if (item.key === 'ride') {
-                  router.push('/ride-request');
-                }
-                if (item.key === 'delivery') {
-                  router.push('/delivery-request');
-                }
-                if (item.key === 'work') {
-                  router.push('/(tabs)/work');
-                }
-              }}
+              onPress={() => onQuickAction(item)}
             >
               <Ionicons name={item.icon} size={30} color="#FFFFFF" />
               <Text style={styles.actionText}>{item.title}</Text>
@@ -153,35 +195,51 @@ export default function HomeTabScreen() {
           <Text style={styles.infoText}>Fase piloto em Nampula.</Text>
         </View>
 
-        <Text style={styles.sectionTitle}>Corridas recentes</Text>
+        <Text style={styles.sectionTitle}>{isProvider ? 'Histórico recente (como prestador)' : 'Corridas recentes'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.recentList}>
-          {recentRides.length === 0 ? (
+          {recentActivityPreview.length === 0 ? (
             <View style={styles.recentCard}>
-              <Ionicons name="car-outline" size={20} color="#8A9AB5" />
-              <Text style={styles.recentTitleMuted}>Ainda sem corridas</Text>
-              <Text style={styles.recentDateMuted}>Conclua uma corrida para ver aqui o histórico.</Text>
+              <Ionicons name={isProvider ? 'briefcase-outline' : 'car-outline'} size={20} color="#8A9AB5" />
+              <Text style={styles.recentTitleMuted}>
+                {isProvider ? 'Ainda sem serviços como prestador' : 'Ainda sem corridas'}
+              </Text>
+              <Text style={styles.recentDateMuted}>
+                {isProvider
+                  ? 'Corridas e entregas em que foi motorista ou entregador aparecem aqui.'
+                  : 'Conclua uma corrida para ver aqui o histórico.'}
+              </Text>
             </View>
           ) : (
-            recentRides.map((item) => (
-              <Pressable
-                key={item.id}
-                style={styles.recentCard}
-                onPress={() => router.push({ pathname: '/activity-detail', params: { id: item.id } })}
-              >
-                <Ionicons name="navigate-circle-outline" size={20} color="#006AFF" />
-                <Text style={styles.recentTitle} numberOfLines={2}>
-                  {item.title}
-                </Text>
-                <Text style={styles.recentDate}>
-                  {item.date} · {item.time}
-                </Text>
-                <Text
-                  style={[styles.recentStatus, item.status === 'cancelled' && styles.recentStatusCancelled]}
+            recentActivityPreview.map((item) => {
+              const iconName =
+                item.type === 'delivery' ? 'bicycle-outline' : 'car-sport-outline';
+              return (
+                <Pressable
+                  key={item.id}
+                  style={styles.recentCard}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/activity-detail',
+                      params: isProvider ? { id: item.id, perspective: 'provider' } : { id: item.id },
+                    })
+                  }
                 >
-                  {item.statusLabel}
-                </Text>
-              </Pressable>
-            ))
+                  <Ionicons name={iconName} size={20} color="#006AFF" />
+                  <Text style={styles.recentTitle} numberOfLines={2}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.recentDate}>
+                    {item.date} · {item.time}
+                  </Text>
+                  <Text
+                    style={[styles.recentStatus, item.status === 'cancelled' && styles.recentStatusCancelled]}
+                    numberOfLines={2}
+                  >
+                    {item.statusLabel}
+                  </Text>
+                </Pressable>
+              );
+            })
           )}
         </ScrollView>
       </KeyboardAvoidingForm>
@@ -265,6 +323,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 0,
   },
+  modeBadge: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: '#EAF4FF',
+    borderWidth: 1,
+    borderColor: '#B8D4FF',
+  },
+  modeBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#006AFF',
+  },
   searchBox: {
     height: 54,
     borderRadius: 10,
@@ -286,6 +362,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 12,
+  },
+  gridProviderTop: {
+    marginTop: 6,
   },
   actionCard: {
     width: '48%',

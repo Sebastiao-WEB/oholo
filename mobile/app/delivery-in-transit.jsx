@@ -29,6 +29,7 @@ export default function DeliveryInTransitScreen() {
   const riderPlate = String(params.riderPlate || 'NPL-45-112-MZ');
   const riderAvatarUri = String(params.riderAvatarUri || '').trim();
   const riderPhone = String(params.riderPhone || '').trim();
+  const courierUserId = String(params.courierUserId || '').trim();
   const pickupLat = Number(params.pickupLat || -15.1234);
   const pickupLon = Number(params.pickupLon || 39.2612);
   const destinationLat = Number(params.destinationLat || -15.1096);
@@ -149,6 +150,7 @@ export default function DeliveryInTransitScreen() {
           riderName,
           riderVehicle,
           riderPlate,
+          ...(courierUserId ? { courierUserId } : {}),
           ...(riderAvatarUri ? { riderAvatarUri } : {}),
           ...(riderPhone ? { riderPhone } : {}),
         },
@@ -175,6 +177,7 @@ export default function DeliveryInTransitScreen() {
     riderName,
     riderVehicle,
     riderPlate,
+    courierUserId,
     riderAvatarUri,
     riderPhone,
   ]);

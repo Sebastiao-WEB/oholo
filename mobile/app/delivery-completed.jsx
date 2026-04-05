@@ -59,6 +59,8 @@ export default function DeliveryCompletedScreen() {
   const riderVehicle = String(params.riderVehicle || 'Mota azul');
   const riderPlate = String(params.riderPlate || 'NPL-45-112-MZ');
   const riderAvatarUri = String(params.riderAvatarUri || '').trim();
+  const courierUserIdParam = String(params.courierUserId || '').trim();
+  const courierUserIdNum = courierUserIdParam ? parseInt(courierUserIdParam, 10) : Number.NaN;
   const riderPhotoSource =
     riderAvatarUri && (riderAvatarUri.startsWith('http') || riderAvatarUri.startsWith('file:'))
       ? { uri: riderAvatarUri }
@@ -97,6 +99,7 @@ export default function DeliveryCompletedScreen() {
         const fee = Number.parseFloat(String(deliveryFee).replace(',', '.'));
         insertDeliveredDelivery({
           customerUserId: userId,
+          ...(Number.isFinite(courierUserIdNum) ? { courierUserId: courierUserIdNum } : {}),
           deliveryCode,
           pickupAddress: pickupName,
           dropoffAddress: destinationName,
@@ -121,6 +124,7 @@ export default function DeliveryCompletedScreen() {
     pickupCoord.longitude,
     destinationCoord.latitude,
     destinationCoord.longitude,
+    courierUserIdParam,
   ]);
 
   const miniMapRegion = useMemo(() => {
