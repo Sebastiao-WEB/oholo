@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     marginTop: 14,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 10,
     backgroundColor: '#006AFF',
     alignItems: 'center',
     justifyContent: 'center',

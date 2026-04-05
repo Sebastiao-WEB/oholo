@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   skipTopButton: {
     minWidth: 84,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D7DBE3',
     alignItems: 'center',
@@ -108,12 +108,12 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     width: '100%',
-    borderRadius: 24,
+    borderRadius: 10,
     marginBottom: 28,
     overflow: 'hidden',
   },
   heroImage: {
-    borderRadius: 24,
+    borderRadius: 10,
   },
   copyArea: {
     paddingHorizontal: 2,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     height: 62,
-    borderRadius: 31,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

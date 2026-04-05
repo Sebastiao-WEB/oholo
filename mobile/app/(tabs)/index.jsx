@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
   searchBox: {
     height: 54,
-    borderRadius: 27,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#2B63B8',
     paddingHorizontal: 16,

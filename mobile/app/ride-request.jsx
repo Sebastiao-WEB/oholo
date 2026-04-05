@@ -466,7 +466,7 @@ const styles = StyleSheet.create({
   activeField: {
     borderWidth: 1.5,
     borderColor: '#2B63B8',
-    borderRadius: 14,
+    borderRadius: 10,
     paddingTop: 12,
     paddingBottom: 14,
     shadowColor: '#00000022',
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   searchButton: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: 10,
     backgroundColor: '#006AFF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   },
   estimateButton: {
     height: 56,
-    borderRadius: 14,
+    borderRadius: 10,
     backgroundColor: '#0A2547',
     marginTop: 14,
     alignItems: 'center',

@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   rideTypeCard: {
     width: 168,
     minHeight: 136,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1.5,
     borderColor: '#D4DCE8',
     backgroundColor: '#F8FAFD',
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   paymentChip: {
     width: 132,
     height: 46,
-    borderRadius: 15,
+    borderRadius: 10,
     borderWidth: 1.2,
     borderColor: '#CDD7E5',
     backgroundColor: '#F8FAFD',
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     height: 48,
-    borderRadius: 24,
+    borderRadius: 10,
     backgroundColor: '#0A2547',
     alignItems: 'center',
     justifyContent: 'center',

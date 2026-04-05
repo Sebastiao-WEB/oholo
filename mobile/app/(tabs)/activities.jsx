@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   searchBox: {
     height: 50,
-    borderRadius: 25,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#2B63B8',
     paddingHorizontal: 14,
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: '#F0F4FA',
     borderWidth: 1,
     borderColor: '#E0E8F2',

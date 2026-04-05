@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 50,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#C7D5E6',
     backgroundColor: '#F8FBFF',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
   },
   inputWithIcon: {
     height: 50,
-    borderRadius: 14,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#C7D5E6',
     backgroundColor: '#F8FBFF',
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     height: 52,
-    borderRadius: 26,
+    borderRadius: 10,
     backgroundColor: '#006AFF',
     alignItems: 'center',
     justifyContent: 'center',

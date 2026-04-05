@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   btnPrimary: {
     flex: 1,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 10,
     backgroundColor: '#1E67FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   btnSecondary: {
     flex: 1,
     height: 50,
-    borderRadius: 25,
+    borderRadius: 10,
     backgroundColor: '#EEF1F6',
     alignItems: 'center',
     justifyContent: 'center',

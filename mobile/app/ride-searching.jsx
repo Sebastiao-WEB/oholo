@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   cancelButton: {
     marginTop: 10,
     height: 48,
-    borderRadius: 24,
+    borderRadius: 10,
     backgroundColor: '#D64045',
     alignItems: 'center',
     justifyContent: 'center',

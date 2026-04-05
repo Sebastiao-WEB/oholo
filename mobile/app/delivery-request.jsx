@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   activeField: {
     borderWidth: 1.5,
     borderColor: '#2B63B8',
-    borderRadius: 14,
+    borderRadius: 10,
     paddingTop: 12,
     paddingBottom: 14,
     shadowColor: '#00000022',
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   searchButton: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: 10,
     backgroundColor: '#3A84FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 10,
     backgroundColor: '#F0F4FA',
     borderWidth: 1,
     borderColor: '#E0E8F2',
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   },
   itemInput: {
     minHeight: 72,
-    borderRadius: 12,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#D4DEEA',
     backgroundColor: '#F8FBFF',
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
   },
   estimateButton: {
     height: 56,
-    borderRadius: 14,
+    borderRadius: 10,
     backgroundColor: '#3A84FF',
     marginTop: 12,
     alignItems: 'center',

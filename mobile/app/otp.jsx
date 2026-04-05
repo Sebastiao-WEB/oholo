@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   otpCell: {
     width: 46,
     height: 52,
-    borderRadius: 14,
+    borderRadius: 10,
     backgroundColor: '#F0F7FF',
     borderWidth: 1,
     borderColor: '#C7D5E6',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     width: '100%',
     height: 52,
-    borderRadius: 26,
+    borderRadius: 10,
     backgroundColor: '#0A2547',
     alignItems: 'center',
     justifyContent: 'center',
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     width: '100%',
     height: 50,
-    borderRadius: 25,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: '#0A2547',
     backgroundColor: '#FFFFFF',

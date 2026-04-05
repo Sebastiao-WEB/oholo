@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   actionButton: {
     flex: 1,
     height: 46,
-    borderRadius: 23,
+    borderRadius: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
