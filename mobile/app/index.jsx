@@ -3,7 +3,9 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { getFirstSync, initLocalDatabase } from '../db';
 import { isOnboardingCompleted } from '../utils/onboardingStorage';
+import { clearSession, getSessionUserId } from '../utils/session';
 
 const COLORS = {
   navy: '#0A2547',
@@ -19,11 +21,32 @@ export default function SplashScreen() {
     const timer = setTimeout(() => {
       void (async () => {
         const done = await isOnboardingCompleted();
-        if (done) {
-          router.replace('/login');
-        } else {
+        if (!done) {
           router.replace('/onboarding/step-1');
+          return;
         }
+
+        try {
+          initLocalDatabase();
+        } catch (e) {
+          console.error('[splash]', e);
+        }
+
+        const userId = await getSessionUserId();
+        if (userId != null) {
+          try {
+            const row = getFirstSync('SELECT id FROM users WHERE id = ?', [userId]);
+            if (row) {
+              router.replace('/(tabs)');
+              return;
+            }
+          } catch (e) {
+            console.error('[splash] sessão', e);
+          }
+          await clearSession();
+        }
+
+        router.replace('/login');
       })();
     }, 2500);
 

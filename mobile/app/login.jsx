@@ -1,8 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import { navigateToMainApp } from '../utils/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -24,7 +25,7 @@ import {
   phoneToStoredE164,
   validatePasswordLength,
 } from '../utils/authLocal';
-import { setSessionUserId } from '../utils/session';
+import { clearSession, getSessionUserId, setSessionUserId } from '../utils/session';
 
 function showFeatureInDevelopmentAlert() {
   Alert.alert('Em desenvolvimento', 'Esta funcionalidade ainda está em desenvolvimento.');
@@ -33,6 +34,35 @@ function showFeatureInDevelopmentAlert() {
 export default function LoginScreen() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      void (async () => {
+        const userId = await getSessionUserId();
+        if (cancelled || userId == null) {
+          return;
+        }
+        try {
+          initLocalDatabase();
+          const row = getFirstSync('SELECT id FROM users WHERE id = ?', [userId]);
+          if (cancelled) {
+            return;
+          }
+          if (row) {
+            navigateToMainApp();
+            return;
+          }
+          await clearSession();
+        } catch (e) {
+          console.error(e);
+        }
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [])
+  );
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
