@@ -20,6 +20,17 @@ Este documento descreve como gerar um ficheiro **.apk** instalável em Android, 
 
 **Nota:** Para a Play Store costuma usar-se **AAB** (perfil `production` no `eas.json`). O perfil `apk` serve para instalação directa (testes, partilha).
 
+### Google Maps (ecrãs “Pedir corrida” / “Pedir delivery”)
+
+O mapa usa **react-native-maps** com o SDK Google no Android. Sem chave válida, o processo pode **fechar de imediato** ao abrir esses ecrãs.
+
+1. Na [Google Cloud Console](https://console.cloud.google.com/), activa **Maps SDK for Android** e cria uma chave de API.
+2. Restringe a chave ao pacote Android da app (`expo.android.package` em `app.json`, hoje `com.owaneconnect.oholo`).
+3. **EAS Build:** cria um secret de projecto com o nome **`GOOGLE_MAPS_API_KEY`** (o Gradle lê a variável de ambiente durante o build).
+4. **Build local:** exporta `GOOGLE_MAPS_API_KEY` antes de `./gradlew`, ou define `GOOGLE_MAPS_API_KEY=...` em `android/gradle.properties` (não commits a chave).
+
+O `AndroidManifest` usa o placeholder `${googleMapsApiKey}`; o valor vem de `android/app/build.gradle`.
+
 ---
 
 ## Opção A — EAS Build (recomendado)
