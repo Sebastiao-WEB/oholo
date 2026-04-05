@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 
+import { isOnboardingCompleted } from '../utils/onboardingStorage';
+
 const COLORS = {
   navy: '#0A2547',
   blue: '#006AFF',
@@ -15,7 +17,14 @@ export default function SplashScreen() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.replace('/onboarding/step-1');
+      void (async () => {
+        const done = await isOnboardingCompleted();
+        if (done) {
+          router.replace('/login');
+        } else {
+          router.replace('/onboarding/step-1');
+        }
+      })();
     }, 2500);
 
     return () => clearTimeout(timer);

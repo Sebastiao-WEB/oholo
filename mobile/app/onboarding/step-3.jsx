@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { goToLoginAfterOnboarding } from '../../utils/onboardingNavigation';
+
 const COLORS = {
   background: '#F8FAFD',
   navy: '#0A2547',
@@ -29,7 +31,7 @@ export default function OnboardingStepThreeScreen() {
         <View style={styles.headerRow}>
           <Image source={require('../../assets/img/horizontal-logo.png')} style={styles.horizontalLogo} resizeMode="contain" />
           <Text style={styles.progressText}>3/3</Text>
-          <Pressable style={styles.skipTopButton} onPress={() => router.replace('/login')}>
+          <Pressable style={styles.skipTopButton} onPress={() => void goToLoginAfterOnboarding()}>
             <Text style={styles.skipTopText}>Pular</Text>
           </Pressable>
         </View>
@@ -52,7 +54,7 @@ export default function OnboardingStepThreeScreen() {
             <Text style={styles.secondaryButtonText}>Anterior</Text>
           </Pressable>
 
-          <Pressable style={[styles.actionButton, styles.primaryButton]} onPress={() => router.replace('/login')}>
+          <Pressable style={[styles.actionButton, styles.primaryButton]} onPress={() => void goToLoginAfterOnboarding()}>
             <Text style={styles.primaryButtonText}>Começar</Text>
           </Pressable>
         </View>
