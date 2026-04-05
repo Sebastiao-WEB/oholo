@@ -3,6 +3,9 @@
     "name": "oholo",
     "slug": "oholo",
     "version": "1.0.0",
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    },
     "plugins": [
       "expo-router",
       [

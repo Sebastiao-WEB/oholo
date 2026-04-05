@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { KeyboardAvoidingScreen } from '../components/KeyboardAvoidingForm';
 import { getFirstSync, initLocalDatabase, runSync } from '../db';
 import {
   hashPasswordForStorage,
@@ -291,12 +293,17 @@ export default function PersonalDataScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
+      <KeyboardAvoidingScreen style={styles.keyboardFlex}>
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={[
+            styles.content,
+            Platform.OS === 'android' && styles.contentKeyboardPad,
+          ]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
         <Text style={styles.lead}>
           Os dados vêm da sua conta. A foto é guardada neste dispositivo; em produção poderá sincronizar com o
           servidor.
@@ -424,6 +431,7 @@ export default function PersonalDataScreen() {
           )}
         </Pressable>
       </ScrollView>
+      </KeyboardAvoidingScreen>
     </SafeAreaView>
   );
 }
@@ -432,6 +440,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#0A2547',
+  },
+  keyboardFlex: {
+    flex: 1,
   },
   header: {
     height: 56,
@@ -464,6 +475,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 28,
+  },
+  contentKeyboardPad: {
+    paddingBottom: 120,
   },
   lead: {
     fontSize: 14,

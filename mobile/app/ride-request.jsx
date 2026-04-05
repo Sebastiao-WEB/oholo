@@ -6,6 +6,8 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View 
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
+
 const NAMPULA_REGION = {
   latitude: -15.1165,
   longitude: 39.2666,
@@ -33,6 +35,7 @@ const TRAFFIC_CONFIG = {
 
 export default function RideRequestScreen() {
   const router = useRouter();
+  const keyboardBottom = useKeyboardBottomInset();
   const mapRef = useRef(null);
   const [pickupCoordinate, setPickupCoordinate] = useState(null);
   const [destinationCoordinate, setDestinationCoordinate] = useState(null);
@@ -319,7 +322,7 @@ export default function RideRequestScreen() {
           </MapView>
         </View>
 
-        <View style={styles.bottomSheet}>
+        <View style={[styles.bottomSheet, { bottom: keyboardBottom }]}>
           <View style={styles.dragger} />
 
           <View style={[styles.fieldRow, selectionMode === 'pickup' && styles.activeField]}>

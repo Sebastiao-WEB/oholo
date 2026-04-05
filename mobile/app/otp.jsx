@@ -1,8 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import KeyboardAvoidingForm from '../components/KeyboardAvoidingForm';
 
 export default function OtpScreen() {
   const router = useRouter();
@@ -29,7 +31,7 @@ export default function OtpScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingForm style={styles.container} contentContainerStyle={styles.contentContainer}>
         <View style={styles.card}>
           <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Código de verificação</Text>
@@ -66,7 +68,7 @@ export default function OtpScreen() {
             <Text style={styles.secondaryButtonText}>Voltar ao login</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingForm>
     </SafeAreaView>
   );
 }

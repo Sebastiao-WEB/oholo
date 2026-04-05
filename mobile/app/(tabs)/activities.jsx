@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import KeyboardAvoidingForm from '../../components/KeyboardAvoidingForm';
 import { initLocalDatabase, listAllActivitiesForUser } from '../../db';
 import { statusStyle, typeMeta } from '../../data/mockActivities';
 import { getSessionUserId } from '../../utils/session';
@@ -69,7 +71,7 @@ export default function ActivitiesTabScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingForm scrollStyle={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.screenSubtitle}>Histórico guardado neste dispositivo (SQLite)</Text>
 
         <View style={styles.searchBox}>
@@ -160,7 +162,7 @@ export default function ActivitiesTabScreen() {
             })}
           </View>
         )}
-      </ScrollView>
+      </KeyboardAvoidingForm>
     </SafeAreaView>
   );
 }

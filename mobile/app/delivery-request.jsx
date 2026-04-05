@@ -2,9 +2,21 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
 import {
   DELIVERY_CATEGORIES,
   DELIVERY_SIZE_TIERS,
@@ -38,6 +50,7 @@ const TRAFFIC_CONFIG = {
 
 export default function DeliveryRequestScreen() {
   const router = useRouter();
+  const keyboardBottom = useKeyboardBottomInset();
   const mapRef = useRef(null);
   const [pickupCoordinate, setPickupCoordinate] = useState(null);
   const [dropoffCoordinate, setDropoffCoordinate] = useState(null);
@@ -327,13 +340,17 @@ export default function DeliveryRequestScreen() {
           </MapView>
         </View>
 
-        <View style={styles.bottomSheet}>
+        <View style={[styles.bottomSheet, { bottom: keyboardBottom }]}>
           <View style={styles.dragger} />
 
           <ScrollView
             style={styles.sheetScroll}
-            contentContainerStyle={styles.sheetScrollContent}
+            contentContainerStyle={[
+              styles.sheetScrollContent,
+              Platform.OS === 'android' && styles.sheetScrollContentAndroidKb,
+            ]}
             keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
           >
             <View style={[styles.fieldRow, selectionMode === 'pickup' && styles.activeField]}>
@@ -541,6 +558,9 @@ const styles = StyleSheet.create({
   },
   sheetScrollContent: {
     paddingBottom: 6,
+  },
+  sheetScrollContentAndroidKb: {
+    paddingBottom: 100,
   },
   dragger: {
     width: 52,

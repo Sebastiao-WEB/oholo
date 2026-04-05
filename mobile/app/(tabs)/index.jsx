@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import KeyboardAvoidingForm from '../../components/KeyboardAvoidingForm';
 import { getFirstSync, initLocalDatabase, listRideActivitiesForUser } from '../../db';
 import { formatPhoneForDisplay } from '../../utils/formatPhone';
 import { avatarFileExists } from '../../utils/profileAvatar';
@@ -110,7 +111,11 @@ export default function HomeTabScreen() {
         <Text style={styles.location}>Nampula, Moçambique</Text>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingForm
+        style={styles.keyboardArea}
+        scrollStyle={styles.scroll}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color="#6B7D96" />
           <TextInput
@@ -179,7 +184,7 @@ export default function HomeTabScreen() {
             ))
           )}
         </ScrollView>
-      </ScrollView>
+      </KeyboardAvoidingForm>
     </SafeAreaView>
   );
 }
@@ -188,6 +193,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  keyboardArea: {
+    flex: 1,
   },
   fixedHeader: {
     paddingHorizontal: 18,

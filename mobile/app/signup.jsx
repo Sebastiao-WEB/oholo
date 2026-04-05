@@ -7,7 +7,6 @@ import {
   Alert,
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import KeyboardAvoidingForm from '../components/KeyboardAvoidingForm';
 import { getFirstSync, initLocalDatabase, runSync } from '../db';
 import {
   hashPasswordForStorage,
@@ -99,7 +99,7 @@ export default function SignUpScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingForm style={styles.container} contentContainerStyle={styles.contentContainer}>
         <View style={styles.card}>
           <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
 
@@ -215,7 +215,7 @@ export default function SignUpScreen() {
             </Pressable>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingForm>
     </SafeAreaView>
   );
 }

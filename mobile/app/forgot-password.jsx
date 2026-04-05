@@ -1,8 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import KeyboardAvoidingForm from '../components/KeyboardAvoidingForm';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
@@ -10,7 +12,7 @@ export default function ForgotPasswordScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar style="dark" />
-      <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <KeyboardAvoidingForm style={styles.container} contentContainerStyle={styles.contentContainer}>
         <View style={styles.card}>
           <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
 
@@ -40,7 +42,7 @@ export default function ForgotPasswordScreen() {
             <Text style={styles.secondaryButtonText}>Voltar</Text>
           </Pressable>
         </View>
-      </ScrollView>
+      </KeyboardAvoidingForm>
     </SafeAreaView>
   );
 }
