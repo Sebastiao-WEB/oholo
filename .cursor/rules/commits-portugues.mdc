@@ -1,0 +1,10 @@
+---
+description: Mensagens de commit Git em português
+alwaysApply: true
+---
+
+# Commits em português
+
+- **Todas as mensagens de commit** (`git commit`) devem estar **em português** (pt-PT ou pt-MZ, alinhado ao resto do projeto).
+- Preferir **imperativo** ou frases curtas e descritivas: o que o commit faz (ex.: `Adiciona validação de telefone`, `Corrige overlay do teclado no Android`).
+- Prefixos opcionais podem seguir convenção em português ou híbrido curto: `feat`, `fix`, `docs`, `chore` — com descrição **sempre em português** após os dois pontos (ex.: `fix(mobile): impede teclado de cobrir campos`).
