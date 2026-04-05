@@ -59,8 +59,8 @@ export default function RideConfirmScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
         </Pressable>
         <Text style={styles.headerTitle}>Confirmar corrida</Text>
         <View style={styles.headerSpacer} />
@@ -201,29 +201,28 @@ export default function RideConfirmScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F4F6FA',
+    backgroundColor: '#0A2547',
   },
   header: {
-    height: 54,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E2E8F0',
+    height: 56,
+    backgroundColor: '#0A2547',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A2547',
+    paddingHorizontal: 12,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     color: '#FFFFFF',
-    fontSize: 32 / 2,
+    fontSize: 16,
     fontWeight: '800',
   },
   headerSpacer: {
-    width: 24,
+    width: 26,
   },
   container: {
     flex: 1,
+    backgroundColor: '#F6F8FC',
   },
   contentContainer: {
     paddingHorizontal: 12,

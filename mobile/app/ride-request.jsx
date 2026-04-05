@@ -277,7 +277,7 @@ export default function RideRequestScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={() => router.navigate('/(tabs)')} hitSlop={10}>
             <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
           </Pressable>
           <Text style={styles.headerTitle}>Pedir corrida</Text>
@@ -399,7 +399,7 @@ export default function RideRequestScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F3F6FA',
+    backgroundColor: '#0A2547',
   },
   container: {
     flex: 1,
@@ -407,20 +407,18 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   header: {
+    height: 56,
     backgroundColor: '#0A2547',
-    minHeight: 56,
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 4,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
   },
   headerTitle: {
     flex: 1,
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
     textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
   },
   headerSpacer: {
     width: 26,

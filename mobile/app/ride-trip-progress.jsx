@@ -150,7 +150,7 @@ export default function RideTripProgressScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
         </Pressable>
         <Text style={styles.headerTitle}>Corrida em progresso</Text>
         <View style={styles.headerSpacer} />
@@ -218,13 +218,13 @@ export default function RideTripProgressScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  safeArea: { flex: 1, backgroundColor: '#0A2547' },
   header: {
     height: 56,
-    paddingHorizontal: 12,
     backgroundColor: '#0A2547',
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 12,
   },
   headerTitle: {
     flex: 1,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
-  headerSpacer: { width: 24 },
+  headerSpacer: { width: 26 },
   mapContainer: { flex: 1 },
   map: { flex: 1 },
   pointMarker: {

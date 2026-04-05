@@ -33,7 +33,7 @@ export default function OtpScreen() {
         <View style={styles.card}>
           <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Confirmar OTP</Text>
-          <Text style={styles.subtitle}>Insira o codigo enviado para o seu email ou telefone.</Text>
+          <Text style={styles.subtitle}>Insira o codigo enviado por SMS para o seu numero de telefone.</Text>
 
           <View style={styles.otpRow}>
             {otp.map((digit, index) => (

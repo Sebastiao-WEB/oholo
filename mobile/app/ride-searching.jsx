@@ -208,8 +208,8 @@ export default function RideSearchingScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        <Pressable onPress={() => router.back()} hitSlop={10}>
+          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
         </Pressable>
         <Text style={styles.headerTitle}>Buscando motorista</Text>
         <View style={styles.headerSpacer} />
@@ -323,24 +323,24 @@ export default function RideSearchingScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A2547',
   },
   header: {
-    height: 54,
-    paddingHorizontal: 12,
+    height: 56,
+    backgroundColor: '#0A2547',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#0A2547',
+    paddingHorizontal: 12,
   },
   headerTitle: {
     flex: 1,
     textAlign: 'center',
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '800',
   },
   headerSpacer: {
-    width: 24,
+    width: 26,
   },
   mapContainer: {
     flex: 1,

@@ -4,7 +4,7 @@
 - Projeto: `Oholo` (app mobile)
 - Stack: React Native + Expo + Expo Router
 - Mapa: OpenStreetMap (`UrlTile`) + OSRM para rotas
-- Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída) e histórico de atividades (lista + detalhe)
+- Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída), histórico de atividades (lista + detalhe) e abas Trabalho e Perfil com UI alinhada ao restante app
 - Extensão de telas: `.jsx`
 
 ## Paleta de cores aplicada
@@ -22,7 +22,10 @@
 - `app/forgot-password.jsx`
 - `app/otp.jsx`
 - `app/reset-password.jsx`
-- `app/(tabs)/index.jsx` (Home)
+- `app/(tabs)/index.jsx` (Home; atalho “Trabalhar com a plataforma” abre a aba Trabalho)
+- `app/(tabs)/work.jsx` (hub parceiros: motorista, entregador, requisitos, suporte; CTAs com alerta até fluxo real)
+- `app/(tabs)/profile.jsx` (cabeçalho de conta, menu de definições mock, sair → `login`)
+- `app/personal-data.jsx` (dados pessoais editáveis: nome, telefone, palavra-passe opcional, foto via galeria/câmara — `expo-image-picker`)
 - `app/(tabs)/activities.jsx` (lista de atividades: pesquisa, filtros, dados mock)
 - `app/activity-detail.jsx` (detalhe de uma atividade; navegação a partir da lista)
 - `data/mockActivities.js` (dados mock partilhados entre lista e detalhe)
@@ -44,6 +47,10 @@
 ## Fluxo de atividades (histórico)
 - Aba **Atividades**: lista com filtros (Todas / Corridas / Delivery / Bilhetes) e pesquisa.
 - Toque num item abre `activity-detail` com `params.id`; dados vêm de `data/mockActivities.js` até existir API.
+
+## Abas Trabalho e Perfil
+- **Trabalho**: cartão piloto Nampula, lista de opções (motorista, entregador, documentos, contacto) e botão de candidatura; interacções mostram `Alert` até existir fluxo/API.
+- **Perfil**: dados mock do utilizador, **Dados pessoais** abre `personal-data` (edição + foto), outras linhas de menu (placeholders) e **Terminar sessão** com confirmação → `router.replace('/login')`.
 
 ## Comportamento de tempo (dev x produção)
 - Em `ride-in-progress.jsx`:

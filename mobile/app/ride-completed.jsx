@@ -18,8 +18,8 @@ export default function RideCompletedScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable style={styles.backButton} onPress={() => router.replace('/(tabs)')}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        <Pressable onPress={() => router.replace('/(tabs)')} hitSlop={10}>
+          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
         </Pressable>
         <Text style={styles.headerTitle}>Corrida concluída</Text>
         <View style={styles.headerSpacer} />
@@ -141,16 +141,10 @@ const styles = StyleSheet.create({
   },
   header: {
     height: 56,
-    paddingHorizontal: 12,
     backgroundColor: '#0A2547',
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  backButton: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   headerTitle: {
     flex: 1,
@@ -160,7 +154,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   headerSpacer: {
-    width: 24,
+    width: 26,
   },
   successWrap: {
     marginTop: 18,

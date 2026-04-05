@@ -250,7 +250,7 @@ export default function RideInProgressScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A2547',
   },
   header: {
     height: 56,

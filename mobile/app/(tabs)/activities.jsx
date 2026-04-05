@@ -29,8 +29,15 @@ export default function ActivitiesTabScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.navigate('/(tabs)')} hitSlop={10}>
+          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Atividades</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.screenTitle}>Atividades</Text>
         <Text style={styles.screenSubtitle}>Histórico de corridas, delivery e bilhetes</Text>
 
         <View style={styles.searchBox}>
@@ -125,7 +132,24 @@ export default function ActivitiesTabScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#0A2547',
+  },
+  header: {
+    height: 56,
+    backgroundColor: '#0A2547',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  headerSpacer: {
+    width: 26,
   },
   scroll: {
     flex: 1,
@@ -133,16 +157,10 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 18,
+    paddingTop: 14,
     paddingBottom: 24,
   },
-  screenTitle: {
-    marginTop: 8,
-    fontSize: 21,
-    fontWeight: '800',
-    color: '#0A2547',
-  },
   screenSubtitle: {
-    marginTop: 4,
     fontSize: 15,
     color: '#6C7B90',
     marginBottom: 14,
