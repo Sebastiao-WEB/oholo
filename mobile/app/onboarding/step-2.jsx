@@ -31,8 +31,8 @@ export default function OnboardingStepTwoScreen() {
           <View style={styles.progressBadge}>
             <Text style={styles.progressText}>2/3</Text>
           </View>
-          <Pressable style={styles.skipTopButton} onPress={() => router.replace('/login')}>
-            <Text style={styles.skipTopText}>Pular</Text>
+          <Pressable style={styles.skipTopButton} onPress={() => router.back()}>
+            <Text style={styles.skipTopText}>Anterior</Text>
           </Pressable>
         </View>
 
@@ -45,13 +45,13 @@ export default function OnboardingStepTwoScreen() {
         <View style={styles.copyArea}>
           <Text style={styles.title}>Envie e receba{'\n'}encomendas com{'\n'}facilidade</Text>
           <Text style={styles.description}>
-            Faca deliveries locais de forma simples, rapida e segura, direto pelo seu telemovel.
+            Faça entregas locais de forma simples, rápida e segura, diretamente no seu telemóvel.
           </Text>
         </View>
 
         <View style={styles.bottomActions}>
-          <Pressable style={[styles.actionButton, styles.secondaryButton]} onPress={() => router.replace('/login')}>
-            <Text style={styles.secondaryButtonText}>Pular</Text>
+          <Pressable style={[styles.actionButton, styles.secondaryButton]} onPress={() => router.back()}>
+            <Text style={styles.secondaryButtonText}>Anterior</Text>
           </Pressable>
 
           <Pressable style={[styles.actionButton, styles.primaryButton]} onPress={() => router.push('/onboarding/step-3')}>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    height: 62,
+    height: 52,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',

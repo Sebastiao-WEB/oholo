@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    height: 62,
+    height: 52,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',

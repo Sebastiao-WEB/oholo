@@ -41,19 +41,19 @@ export default function OnboardingStepThreeScreen() {
         />
 
         <View style={styles.copyArea}>
-          <Text style={styles.title}>Compre bilhetes{'\n'}interprovinciais no{'\n'}seu telemovel</Text>
+          <Text style={styles.title}>Compre bilhetes{'\n'}interprovinciais no{'\n'}seu telemóvel</Text>
           <Text style={styles.description}>
-            Pesquise viagens, escolha rotas e reserve o seu lugar com mais comodidade e seguranca.
+            Pesquise viagens, escolha rotas e reserve o seu lugar com mais comodidade e segurança.
           </Text>
         </View>
 
         <View style={styles.bottomActions}>
           <Pressable style={[styles.actionButton, styles.secondaryButton]} onPress={() => router.back()}>
-            <Text style={styles.secondaryButtonText}>Voltar</Text>
+            <Text style={styles.secondaryButtonText}>Anterior</Text>
           </Pressable>
 
           <Pressable style={[styles.actionButton, styles.primaryButton]} onPress={() => router.replace('/login')}>
-            <Text style={styles.primaryButtonText}>Comecar</Text>
+            <Text style={styles.primaryButtonText}>Começar</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    height: 62,
+    height: 52,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
