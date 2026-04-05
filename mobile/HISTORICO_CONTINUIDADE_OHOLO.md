@@ -5,7 +5,7 @@
 - Stack: React Native + Expo + Expo Router
 - Mapa: OpenStreetMap (`UrlTile`) + OSRM para rotas
 - Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída), histórico de atividades (lista + detalhe) e abas Trabalho e Perfil com UI alinhada ao restante app
-- **Delivery em curso:** `delivery-request` + `delivery-confirm` (resumo e taxa estimada; próximo passo: `delivery-searching`). Home: azulejo “Pedir delivery” → `/delivery-request`.
+- **Delivery (fluxo mock completo no cliente):** `delivery-request` → `delivery-confirm` → `delivery-searching` → `delivery-courier-pickup` → `delivery-in-transit` → `delivery-completed`. Home: azulejo “Pedir delivery” → `/delivery-request`. Pagamento na confirmação ainda fixo em **Dinheiro** até haver UI como em `ride-confirm`.
 - Extensão de telas: `.jsx`
 - Modelagem MVP (serviços, tabela `deliveries`, estados, API): ver `oholo_mvp_modelagem.md` na raiz de `mobile/` (documento **Via Connect**; app com marca **Oholo**).
 
@@ -39,7 +39,11 @@
 - `app/ride-completed.jsx`
 - `app/delivery-request.jsx` (mapa: recolha + entrega, Nampula, Nominatim/OSRM; **tipo de carga**, **peso** e **tamanho** para precificação; descrição livre opcional para o entregador)
 - `utils/deliveryPricing.js` (multiplicadores mock: categoria × peso × tamanho; categorias incl. documentos, electrónicos, roupa/calçado, comida, mercado; replicar ou substituir na API)
-- `app/delivery-confirm.jsx` (resumo do pedido, métricas e taxa estimada mock; botão confirma com `Alert` até existir `delivery-searching`)
+- `app/delivery-confirm.jsx` (resumo, taxa mock; **Confirmar pedido** → `/delivery-searching` com coords, taxa, métricas e metadados de carga)
+- `app/delivery-searching.jsx` (busca de entregador, rota `#3A84FF`, marcadores bicicleta → `/delivery-courier-pickup`)
+- `app/delivery-courier-pickup.jsx` (entregador até recolha; padrão `ride-in-progress` → `/delivery-in-transit`)
+- `app/delivery-in-transit.jsx` (trânsito até destino; padrão `ride-trip-progress` → `/delivery-completed`)
+- `app/delivery-completed.jsx` (resumo delivery, entregador mock)
 
 ## Fluxo de corrida implementado
 1. Usuário define origem/destino em `ride-request`.
@@ -49,22 +53,22 @@
 5. Vai para `ride-trip-progress` (corrida em andamento de origem até destino, com ETA regressivo).
 6. Vai para `ride-completed` (resumo final da viagem).
 
-## Fluxo de delivery (planeado — a implementar)
+## Fluxo de delivery (implementado no cliente; API por ligar)
 
-Baseado em `oholo_mvp_modelagem.md` (tabela **`deliveries`**, estados `requested` → `accepted` → `picked_up` → `in_transit` → `delivered`, ou `cancelled`). O fluxo no telemóvel deve **reutilizar o padrão visual e técnico** do fluxo de corrida (barra superior `#0A2547`, mapa OSM + OSRM, Nampula, `SafeAreaView`, métodos de pagamento como em `ride-confirm`).
+Baseado em `oholo_mvp_modelagem.md` (tabela **`deliveries`**, estados `requested` → `accepted` → `picked_up` → `in_transit` → `delivered`, ou `cancelled`). O fluxo no telemóvel **reutiliza o padrão** do fluxo de corrida (barra `#0A2547`, OSM + OSRM, `SafeAreaView`). **Pendente:** escolha M-Pesa/e-Mola em `delivery-confirm`, atribuição real de estafeta e `delivery_code` no ecrã final.
 
 | Ordem | Ficheiro / rota Expo | Função na app | Ligação ao estado em `deliveries` (quando existir API) |
 | :---: | --- | --- | --- |
-| 1 | `app/delivery-request.jsx` (`/delivery-request`) | **Implementado.** Mapa: **recolha** e **entrega**; Nominatim; OSRM; **descrição do item**; Nampula. | Rascunho → `delivery-confirm` com params |
-| 2 | `app/delivery-confirm.jsx` (`/delivery-confirm`) | **Parcial:** resumo + taxa estimada (mock). Falta: pagamento, chips M-Pesa/e-Mola, tipo de serviço. | `requested` após API |
-| 3 | `app/delivery-searching.jsx` (`/delivery-searching`) | Animação / mapa à procura de entregador; rota até estafeta atribuído. | `requested` → `accepted` |
-| 4 | `app/delivery-courier-pickup.jsx` (`/delivery-courier-pickup`) | Entregador a caminho do **local de recolha**; ETA; contacto/cancelar (padrão `ride-in-progress`). | `accepted` |
-| 5 | `app/delivery-in-transit.jsx` (`/delivery-in-transit`) | Encomenda a caminho do **destino**; ETA; partilhar localização (padrão `ride-trip-progress`). | `picked_up` → `in_transit` |
-| 6 | `app/delivery-completed.jsx` (`/delivery-completed`) | Resumo: locais, descrição, taxa, pagamento, código `delivery_code` (mock até API). | `delivered` |
+| 1 | `app/delivery-request.jsx` (`/delivery-request`) | Mapa recolha/entrega; Nominatim; OSRM; tipo de carga, peso, tamanho; descrição. | Rascunho → `delivery-confirm` |
+| 2 | `app/delivery-confirm.jsx` (`/delivery-confirm`) | Resumo + taxa mock; confirma → `delivery-searching`. | `requested` após API |
+| 3 | `app/delivery-searching.jsx` (`/delivery-searching`) | Busca + atribuição mock; rota azul; bicicleta. | `requested` → `accepted` |
+| 4 | `app/delivery-courier-pickup.jsx` (`/delivery-courier-pickup`) | Estafeta até **recolha**; ETA (dev: tempo curto). | `accepted` |
+| 5 | `app/delivery-in-transit.jsx` (`/delivery-in-transit`) | Até **destino**; partilhar localização. | `picked_up` → `in_transit` |
+| 6 | `app/delivery-completed.jsx` (`/delivery-completed`) | Resumo; taxa; entregador mock; falta `delivery_code` real. | `delivered` |
 
 **Cancelamento:** qualquer ecrã antes de concluído pode oferecer cancelar → alinhar com `cancelled` + `cancellation_reason` no back-end.
 
-**Dev (opcional):** como na corrida, flags `__DEV__` com tempos curtos para simular transições entre ecrãs sem esperar OSRM.
+**Dev:** `delivery-courier-pickup.jsx` e `delivery-in-transit.jsx` usam `__DEV__` com durações curtas (como nas telas de corrida) para transições rápidas.
 
 **Home:** em `app/(tabs)/index.jsx`, o azulejo “Pedir delivery” chama `router.push('/delivery-request')`.
 

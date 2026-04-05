@@ -22,6 +22,14 @@ export const MOCK_ACTIVITIES = [
     statusLabel: 'Concluída',
     amount: '180 MT',
     paymentMethod: 'Dinheiro',
+    pickupName: 'Shoprite Nampula',
+    destinationName: 'Av. Eduardo Mondlane, n.º 120',
+    itemCategory: 'Mercado / compras',
+    itemDescription: '2 sacos — produtos de limpeza e mercearia seca',
+    distanceKm: '4,8 km',
+    durationMin: '22 min',
+    courierName: 'Mário Salimo',
+    deliveryReference: 'Portão lateral do prédio',
   },
   {
     id: '3',
@@ -58,6 +66,23 @@ export const MOCK_ACTIVITIES = [
     statusLabel: 'Concluída',
     amount: '45 MT',
     paymentMethod: 'M-Pesa',
+  },
+  {
+    id: '6',
+    type: 'delivery',
+    title: 'Delivery de documentos',
+    subtitle: 'Tribunal Provincial → Cartório Central',
+    date: '15 Mai 2024',
+    time: '11:20',
+    status: 'completed',
+    statusLabel: 'Concluída',
+    amount: '95 MT',
+    paymentMethod: 'M-Pesa',
+    itemCategory: 'Documentos / leve',
+    itemDescription: 'Envelope A4 selado — urgente',
+    distanceKm: '2,1 km',
+    durationMin: '12 min',
+    courierName: 'Carlos Tembe',
   },
 ];
 
@@ -97,4 +122,15 @@ export function splitRouteSubtitle(subtitle) {
     return { origin: parts[0].trim(), rest: parts.slice(1).join(' → ').trim() };
   }
   return { origin: null, rest: subtitle };
+}
+
+/** Recolha / entrega explícitos ou fallback a partir do subtítulo (delivery). */
+export function deliveryRouteParts(activity) {
+  if (activity.type !== 'delivery') return null;
+  if (activity.pickupName && activity.destinationName) {
+    return { pickup: activity.pickupName, destination: activity.destinationName };
+  }
+  const { origin, rest } = splitRouteSubtitle(activity.subtitle);
+  if (origin) return { pickup: origin, destination: rest };
+  return { pickup: null, destination: activity.subtitle };
 }

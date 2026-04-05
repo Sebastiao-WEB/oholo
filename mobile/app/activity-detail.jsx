@@ -3,7 +3,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getActivityById, splitRouteSubtitle, statusStyle, typeMeta } from '../data/mockActivities';
+import {
+  deliveryRouteParts,
+  getActivityById,
+  splitRouteSubtitle,
+  statusStyle,
+  typeMeta,
+} from '../data/mockActivities';
 
 export default function ActivityDetailScreen() {
   const router = useRouter();
@@ -13,7 +19,15 @@ export default function ActivityDetailScreen() {
   const activity = useMemo(() => getActivityById(id), [id]);
   const meta = activity ? typeMeta(activity.type) : null;
   const st = activity ? statusStyle(activity.status) : null;
-  const routeParts = activity ? splitRouteSubtitle(activity.subtitle) : { origin: null, rest: '' };
+  const isDelivery = activity?.type === 'delivery';
+  const deliveryParts = useMemo(
+    () => (activity && isDelivery ? deliveryRouteParts(activity) : null),
+    [activity, isDelivery]
+  );
+  const routeParts = useMemo(() => {
+    if (!activity || isDelivery) return { origin: null, rest: '' };
+    return splitRouteSubtitle(activity.subtitle);
+  }, [activity, isDelivery]);
 
   const reference = id ? `OH-2024-${id.padStart(4, '0')}` : '—';
 
@@ -69,7 +83,26 @@ export default function ActivityDetailScreen() {
             </View>
           </View>
 
-          {routeParts.origin ? (
+          {isDelivery && deliveryParts?.pickup ? (
+            <>
+              <View style={styles.summaryRow}>
+                <Ionicons name="location" size={22} color="#3A84FF" />
+                <View style={styles.summaryCopy}>
+                  <Text style={styles.summaryLabel}>Ponto de recolha</Text>
+                  <Text style={styles.summaryValue}>{deliveryParts.pickup}</Text>
+                </View>
+              </View>
+              <View style={styles.summaryRow}>
+                <Ionicons name="flag" size={20} color="#0A2547" />
+                <View style={styles.summaryCopy}>
+                  <Text style={styles.summaryLabel}>Ponto de entrega</Text>
+                  <Text style={styles.summaryValue}>{deliveryParts.destination}</Text>
+                </View>
+              </View>
+            </>
+          ) : isDelivery && deliveryParts && !deliveryParts.pickup ? (
+            <Text style={styles.plainSummary}>{deliveryParts.destination}</Text>
+          ) : routeParts.origin ? (
             <>
               <View style={styles.summaryRow}>
                 <Ionicons name="location" size={22} color="#48CAE4" />
@@ -90,9 +123,12 @@ export default function ActivityDetailScreen() {
             <Text style={styles.plainSummary}>{activity.subtitle}</Text>
           )}
 
-          <Text style={styles.refText}>Referência: {reference}</Text>
+          <Text style={styles.refText}>Ref. Oholo: {reference}</Text>
+          {isDelivery && activity.deliveryReference ? (
+            <Text style={styles.refTextSecondary}>Referência no local: {activity.deliveryReference}</Text>
+          ) : null}
 
-          <Text style={styles.sectionTitle}>Informação</Text>
+          <Text style={styles.sectionTitle}>{isDelivery ? 'Detalhes do pedido' : 'Informação'}</Text>
           <View style={styles.metricsGroup}>
             <View style={styles.metricRow}>
               <Ionicons name="calendar-outline" size={17} color="#0A2547" />
@@ -103,11 +139,56 @@ export default function ActivityDetailScreen() {
                 </Text>
               </View>
             </View>
+            {isDelivery && activity.itemCategory ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="cube-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Tipo de carga</Text>
+                  <Text style={styles.metricValue}>{activity.itemCategory}</Text>
+                </View>
+              </View>
+            ) : null}
+            {isDelivery && activity.itemDescription ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="document-text-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Descrição do item</Text>
+                  <Text style={styles.metricValue}>{activity.itemDescription}</Text>
+                </View>
+              </View>
+            ) : null}
+            {isDelivery && activity.distanceKm ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="navigate-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Distância</Text>
+                  <Text style={styles.metricValue}>{activity.distanceKm}</Text>
+                </View>
+              </View>
+            ) : null}
+            {isDelivery && activity.durationMin ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="time-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Tempo estimado (rota)</Text>
+                  <Text style={styles.metricValue}>{activity.durationMin}</Text>
+                </View>
+              </View>
+            ) : null}
+            {isDelivery && activity.courierName ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="bicycle-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Entregador</Text>
+                  <Text style={styles.metricValue}>{activity.courierName}</Text>
+                </View>
+              </View>
+            ) : null}
             {activity.amount ? (
               <View style={styles.metricRow}>
                 <Ionicons name="wallet-outline" size={17} color="#0A2547" />
                 <View style={styles.metricCopy}>
-                  <Text style={styles.metricLabel}>Valor</Text>
+                  <Text style={styles.metricLabel}>{isDelivery ? 'Taxa / valor' : 'Valor'}</Text>
                   <Text style={styles.metricValue}>{activity.amount}</Text>
                 </View>
               </View>
@@ -278,6 +359,13 @@ const styles = StyleSheet.create({
     color: '#7C8DA5',
     fontSize: 13,
     textAlign: 'center',
+  },
+  refTextSecondary: {
+    marginTop: 6,
+    color: '#51627B',
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
   },
   sectionTitle: {
     marginTop: 14,
