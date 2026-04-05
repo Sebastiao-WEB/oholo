@@ -1,7 +1,14 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getFirstSync, initLocalDatabase } from '../../db';
+import { formatPhoneForDisplay } from '../../utils/formatPhone';
+import { avatarFileExists } from '../../utils/profileAvatar';
+import { clearSession, getSessionUserId } from '../../utils/session';
 
 const MENU = [
   { key: 'account', title: 'Dados pessoais', icon: 'person-outline', chevron: true },
@@ -13,6 +20,57 @@ const MENU = [
 
 export default function ProfileTabScreen() {
   const router = useRouter();
+  const [profileName, setProfileName] = useState('');
+  const [profilePhone, setProfilePhone] = useState('');
+  const [profileAvatarUri, setProfileAvatarUri] = useState(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          initLocalDatabase();
+          const userId = await getSessionUserId();
+          if (!active) {
+            return;
+          }
+          if (userId == null) {
+            setProfileName('');
+            setProfilePhone('');
+            setProfileAvatarUri(null);
+            return;
+          }
+          const row = getFirstSync('SELECT name, phone, avatar_uri FROM users WHERE id = ?', [userId]);
+          if (!active) {
+            return;
+          }
+          if (row) {
+            setProfileName(String(row.name || '').trim() || '—');
+            setProfilePhone(formatPhoneForDisplay(row.phone) || '—');
+            let av = row.avatar_uri ? String(row.avatar_uri).trim() : '';
+            if (av && !(await avatarFileExists(av))) {
+              av = '';
+            }
+            setProfileAvatarUri(av || null);
+          } else {
+            setProfileName('');
+            setProfilePhone('');
+            setProfileAvatarUri(null);
+          }
+        } catch (e) {
+          console.error(e);
+          if (active) {
+            setProfileName('');
+            setProfilePhone('');
+            setProfileAvatarUri(null);
+          }
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   const onMenuItem = (key) => {
     if (key === 'account') {
@@ -29,7 +87,14 @@ export default function ProfileTabScreen() {
   const onLogout = () => {
     Alert.alert('Terminar sessão', 'Deseja sair da aplicação?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Sair', style: 'destructive', onPress: () => router.replace('/login') },
+      {
+        text: 'Sair',
+        style: 'destructive',
+        onPress: async () => {
+          await clearSession();
+          router.replace('/login');
+        },
+      },
     ]);
   };
 
@@ -47,10 +112,14 @@ export default function ProfileTabScreen() {
         <Text style={styles.screenSubtitle}>Gerir a sua conta Oholo</Text>
 
         <View style={styles.profileCard}>
-          <Image source={require('../../assets/img/avatar.png')} style={styles.avatar} />
+          <Image
+            source={profileAvatarUri ? { uri: profileAvatarUri } : require('../../assets/img/avatar.png')}
+            style={styles.avatar}
+            resizeMode="cover"
+          />
           <View style={styles.profileText}>
-            <Text style={styles.name}>Cleiton Manuel</Text>
-            <Text style={styles.phone}>+258 84 123 4567</Text>
+            <Text style={styles.name}>{profileName || '—'}</Text>
+            <Text style={styles.phone}>{profilePhone || '—'}</Text>
             <View style={styles.pill}>
               <Ionicons name="shield-checkmark-outline" size={14} color="#1B7A4C" />
               <Text style={styles.pillText}>Conta verificada</Text>

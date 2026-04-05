@@ -32,8 +32,8 @@ export default function OtpScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.card}>
           <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
-          <Text style={styles.title}>Confirmar OTP</Text>
-          <Text style={styles.subtitle}>Insira o codigo enviado por SMS para o seu numero de telefone.</Text>
+          <Text style={styles.title}>Código de verificação</Text>
+          <Text style={styles.subtitle}>Insira o código enviado por SMS para o seu número de telefone.</Text>
 
           <View style={styles.otpRow}>
             {otp.map((digit, index) => (
@@ -59,7 +59,7 @@ export default function OtpScreen() {
           </Pressable>
 
           <Pressable>
-            <Text style={styles.linkText}>Reenviar OTP</Text>
+            <Text style={styles.linkText}>Reenviar código</Text>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={() => router.replace('/login')}>

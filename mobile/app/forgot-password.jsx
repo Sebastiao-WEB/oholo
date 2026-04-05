@@ -16,11 +16,11 @@ export default function ForgotPasswordScreen() {
 
           <Text style={styles.title}>Recuperar palavra-passe</Text>
           <Text style={styles.subtitle}>
-            Informe o seu numero de telefone para enviarmos um codigo de verificacao.
+            Indique o seu número de telefone para lhe enviarmos um código de verificação.
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Numero de telefone</Text>
+            <Text style={styles.inputLabel}>Número de telefone</Text>
             <View style={styles.inputWithIcon}>
               <Ionicons name="call-outline" size={18} color="#5A6E88" style={styles.leftIcon} />
               <TextInput
@@ -33,7 +33,7 @@ export default function ForgotPasswordScreen() {
           </View>
 
           <Pressable style={styles.primaryButton} onPress={() => router.push('/otp')}>
-            <Text style={styles.primaryButtonText}>Enviar codigo</Text>
+            <Text style={styles.primaryButtonText}>Enviar código</Text>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={() => router.back()}>

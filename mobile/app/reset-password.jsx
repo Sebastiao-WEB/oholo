@@ -51,7 +51,7 @@ export default function ResetPasswordScreen() {
           </View>
 
           <Pressable style={styles.primaryButton} onPress={() => router.replace('/login')}>
-            <Text style={styles.primaryButtonText}>Redefinir senha</Text>
+            <Text style={styles.primaryButtonText}>Redefinir palavra-passe</Text>
           </Pressable>
 
           <Pressable style={styles.secondaryButton} onPress={() => router.back()}>

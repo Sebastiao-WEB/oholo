@@ -2,13 +2,99 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getFirstSync, initLocalDatabase, runSync } from '../db';
+import {
+  hashPasswordForStorage,
+  isValidMozPhone9,
+  normalizeMozPhoneDigits,
+  phoneToStoredE164,
+  validateFullName,
+  validatePasswordLength,
+} from '../utils/authLocal';
+
+function showFeatureInDevelopmentAlert() {
+  Alert.alert('Em desenvolvimento', 'Esta funcionalidade ainda está em desenvolvimento.');
+}
 
 export default function SignUpScreen() {
   const router = useRouter();
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleCreateAccount = async () => {
+    const nameTrim = name.trim().replace(/\s+/g, ' ');
+    if (!validateFullName(nameTrim)) {
+      Alert.alert(
+        'Nome inválido',
+        'Use apenas letras, espaços, hífen ou apóstrofo. Não utilize números nem símbolos como @ ou #.'
+      );
+      return;
+    }
+
+    const national = normalizeMozPhoneDigits(phone);
+    if (!national || !isValidMozPhone9(national)) {
+      Alert.alert(
+        'Telefone inválido',
+        'Indique 9 dígitos com prefixo 82, 83, 84, 85, 86 ou 87 (ex.: 84 000 0000 ou +258 84 000 0000).'
+      );
+      return;
+    }
+
+    if (!validatePasswordLength(password)) {
+      Alert.alert('Palavra-passe', 'A palavra-passe deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Palavra-passe', 'A confirmação tem de ser igual à palavra-passe.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      initLocalDatabase();
+      const phoneStored = phoneToStoredE164(national);
+      const existing = getFirstSync('SELECT id FROM users WHERE phone = ?', [phoneStored]);
+      if (existing) {
+        Alert.alert('Conta existente', 'Já existe uma conta com este número de telefone.');
+        return;
+      }
+
+      const passwordHash = await hashPasswordForStorage(password);
+      runSync(
+        `INSERT INTO users (name, phone, email, password, status, is_admin)
+         VALUES (?, ?, NULL, ?, 'active', 0)`,
+        [nameTrim, phoneStored, passwordHash]
+      );
+
+      Alert.alert('Conta criada', 'Pode iniciar sessão com o seu telefone e palavra-passe.', [
+        { text: 'OK', onPress: () => router.replace('/login') },
+      ]);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Não foi possível guardar a conta. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -20,23 +106,49 @@ export default function SignUpScreen() {
           <Text style={styles.title}>Criar conta</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nome completo</Text>
-            <TextInput placeholder="Seu nome completo" placeholderTextColor="#8A9AB5" style={styles.input} />
+            <View style={styles.labelRow}>
+              <Ionicons name="person-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Nome completo</Text>
+            </View>
+            <TextInput
+              placeholder="O seu nome completo"
+              placeholderTextColor="#8A9AB5"
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Telefone</Text>
-            <TextInput placeholder="+258 84 000 0000" placeholderTextColor="#8A9AB5" style={styles.input} keyboardType="phone-pad" />
+            <View style={styles.labelRow}>
+              <Ionicons name="call-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Telefone</Text>
+            </View>
+            <TextInput
+              placeholder="+258 84 000 0000"
+              placeholderTextColor="#8A9AB5"
+              style={styles.input}
+              keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
+            />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Palavra-passe</Text>
+            <View style={styles.labelRow}>
+              <Ionicons name="lock-closed-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Palavra-passe</Text>
+            </View>
             <View style={styles.inputWithIcon}>
               <TextInput
                 placeholder="********"
                 placeholderTextColor="#8A9AB5"
                 style={styles.passwordInput}
                 secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
               />
               <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={10} style={styles.eyeButton}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#5A6E88" />
@@ -45,13 +157,18 @@ export default function SignUpScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Confirmar palavra-passe</Text>
+            <View style={styles.labelRow}>
+              <Ionicons name="shield-checkmark-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Confirmar palavra-passe</Text>
+            </View>
             <View style={styles.inputWithIcon}>
               <TextInput
                 placeholder="********"
                 placeholderTextColor="#8A9AB5"
                 style={styles.passwordInput}
                 secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
               />
               <Pressable onPress={() => setShowConfirmPassword((prev) => !prev)} hitSlop={10} style={styles.eyeButton}>
                 <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#5A6E88" />
@@ -59,20 +176,32 @@ export default function SignUpScreen() {
             </View>
           </View>
 
-          <Pressable style={styles.primaryButton} onPress={() => router.push('/otp')}>
-            <Text style={styles.primaryButtonText}>Criar conta</Text>
+          <Pressable
+            style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
+            onPress={handleCreateAccount}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Criar conta</Text>
+            )}
           </Pressable>
 
-          <Text style={styles.orText}>Ou criar com</Text>
+          <View style={styles.orDividerRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orLabel}>Ou criar com</Text>
+            <View style={styles.orLine} />
+          </View>
 
-          <Pressable style={styles.socialButton}>
+          <Pressable style={styles.socialButton} onPress={showFeatureInDevelopmentAlert}>
             <View style={styles.socialContent}>
               <Image source={require('../assets/img/google.png')} style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Criar com Google</Text>
             </View>
           </Pressable>
 
-          <Pressable style={styles.socialButton}>
+          <Pressable style={styles.socialButton} onPress={showFeatureInDevelopmentAlert}>
             <View style={styles.socialContent}>
               <Image source={require('../assets/img/facebook.png')} style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Criar com Facebook</Text>
@@ -80,7 +209,7 @@ export default function SignUpScreen() {
           </Pressable>
 
           <View style={styles.footerRow}>
-            <Text style={styles.helperText}>Ja tem conta? </Text>
+            <Text style={styles.helperText}>Já tem conta? </Text>
             <Pressable onPress={() => router.replace('/login')}>
               <Text style={styles.linkText}>Entrar</Text>
             </Pressable>
@@ -130,10 +259,15 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 14,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
   inputLabel: {
     color: '#395271',
     fontSize: 14,
-    marginBottom: 8,
   },
   input: {
     height: 50,
@@ -173,6 +307,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
   },
+  primaryButtonDisabled: {
+    opacity: 0.75,
+  },
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -193,11 +330,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 14,
   },
-  orText: {
-    color: '#6D829D',
-    textAlign: 'center',
-    fontSize: 14,
+  orDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#C7D5E6',
+  },
+  orLabel: {
+    paddingHorizontal: 12,
+    color: '#6D829D',
+    fontSize: 14,
+    fontWeight: '500',
   },
   socialButton: {
     height: 48,

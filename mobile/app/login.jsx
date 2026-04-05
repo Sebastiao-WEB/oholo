@@ -1,13 +1,75 @@
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { navigateToMainApp } from '../utils/navigation';
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getFirstSync, initLocalDatabase } from '../db';
+import {
+  isValidMozPhone9,
+  normalizeMozPhoneDigits,
+  passwordMatchesStored,
+  phoneToStoredE164,
+  validatePasswordLength,
+} from '../utils/authLocal';
+import { setSessionUserId } from '../utils/session';
+
+function showFeatureInDevelopmentAlert() {
+  Alert.alert('Em desenvolvimento', 'Esta funcionalidade ainda está em desenvolvimento.');
+}
 
 export default function LoginScreen() {
   const router = useRouter();
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleLogin = async () => {
+    const national = normalizeMozPhoneDigits(phone);
+    if (!national || !isValidMozPhone9(national)) {
+      Alert.alert(
+        'Telefone inválido',
+        'Indique 9 dígitos com prefixo 82, 83, 84, 85, 86 ou 87 (ex.: 84 000 0000 ou +258 84 000 0000).'
+      );
+      return;
+    }
+
+    if (!validatePasswordLength(password)) {
+      Alert.alert('Palavra-passe', 'Indique a sua palavra-passe (mínimo 6 caracteres).');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      initLocalDatabase();
+      const phoneStored = phoneToStoredE164(national);
+      const row = getFirstSync('SELECT id, password FROM users WHERE phone = ?', [phoneStored]);
+      if (!row || !(await passwordMatchesStored(password, row.password))) {
+        Alert.alert('Não foi possível entrar', 'Telefone ou palavra-passe incorretos.');
+        return;
+      }
+      await setSessionUserId(row.id);
+      navigateToMainApp();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Erro', 'Não foi possível validar os dados. Tente novamente.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -19,23 +81,33 @@ export default function LoginScreen() {
           <Text style={styles.title}>Entrar</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Numero de telefone</Text>
+            <View style={styles.labelRow}>
+              <Ionicons name="call-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Número de telefone</Text>
+            </View>
             <TextInput
               placeholder="+258 84 000 0000"
               placeholderTextColor="#8A9AB5"
               style={styles.input}
               keyboardType="phone-pad"
+              value={phone}
+              onChangeText={setPhone}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Palavra-passe</Text>
+            <View style={styles.labelRow}>
+              <Ionicons name="lock-closed-outline" size={18} color="#395271" />
+              <Text style={styles.inputLabel}>Palavra-passe</Text>
+            </View>
             <View style={styles.inputWithIcon}>
               <TextInput
                 placeholder="********"
                 placeholderTextColor="#8A9AB5"
                 style={styles.passwordInput}
                 secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
               />
               <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={10} style={styles.eyeButton}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#5A6E88" />
@@ -46,24 +118,36 @@ export default function LoginScreen() {
           <View style={styles.rowBetween}>
             <Text style={styles.helperText}>Lembrar-me</Text>
             <Pressable onPress={() => router.push('/forgot-password')}>
-              <Text style={styles.linkText}>Esqueci a senha</Text>
+              <Text style={styles.linkText}>Esqueci-me da palavra-passe</Text>
             </Pressable>
           </View>
 
-          <Pressable style={styles.primaryButton} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.primaryButtonText}>Entrar</Text>
+          <Pressable
+            style={[styles.primaryButton, submitting && styles.primaryButtonDisabled]}
+            onPress={handleLogin}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="#FFFFFF" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Entrar</Text>
+            )}
           </Pressable>
 
-          <Text style={styles.orText}>Ou entrar com</Text>
+          <View style={styles.orDividerRow}>
+            <View style={styles.orLine} />
+            <Text style={styles.orLabel}>Ou entrar com</Text>
+            <View style={styles.orLine} />
+          </View>
 
-          <Pressable style={styles.socialButton}>
+          <Pressable style={styles.socialButton} onPress={showFeatureInDevelopmentAlert}>
             <View style={styles.socialContent}>
               <Image source={require('../assets/img/google.png')} style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Entrar com Google</Text>
             </View>
           </Pressable>
 
-          <Pressable style={styles.socialButton}>
+          <Pressable style={styles.socialButton} onPress={showFeatureInDevelopmentAlert}>
             <View style={styles.socialContent}>
               <Image source={require('../assets/img/facebook.png')} style={styles.socialIcon} />
               <Text style={styles.socialButtonText}>Entrar com Facebook</Text>
@@ -71,7 +155,7 @@ export default function LoginScreen() {
           </Pressable>
 
           <View style={styles.footerRow}>
-            <Text style={styles.helperText}>Nao tem conta? </Text>
+            <Text style={styles.helperText}>Não tem conta? </Text>
             <Pressable onPress={() => router.push('/signup')}>
               <Text style={styles.linkText}>Criar conta</Text>
             </Pressable>
@@ -122,10 +206,15 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 14,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
   inputLabel: {
     color: '#395271',
     fontSize: 14,
-    marginBottom: 8,
   },
   input: {
     height: 50,
@@ -180,16 +269,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 12,
   },
+  primaryButtonDisabled: {
+    opacity: 0.75,
+  },
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
   },
-  orText: {
-    color: '#6D829D',
-    textAlign: 'center',
-    fontSize: 14,
+  orDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#C7D5E6',
+  },
+  orLabel: {
+    paddingHorizontal: 12,
+    color: '#6D829D',
+    fontSize: 14,
+    fontWeight: '500',
   },
   socialButton: {
     height: 48,
