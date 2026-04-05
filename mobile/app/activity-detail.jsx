@@ -1,35 +1,110 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  deliveryRouteParts,
-  getActivityById,
-  splitRouteSubtitle,
-  statusStyle,
-  typeMeta,
-} from '../data/mockActivities';
+  initLocalDatabase,
+  loadDeliveryAsActivity,
+  loadRideAsActivity,
+  loadTicketAsActivity,
+} from '../db';
+import { deliveryRouteParts, splitRouteSubtitle, statusStyle, typeMeta } from '../data/mockActivities';
+import { getSessionUserId } from '../utils/session';
 
 export default function ActivityDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const id = String(params.id || '');
+  const [activity, setActivity] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const activity = useMemo(() => getActivityById(id), [id]);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      setLoading(true);
+      (async () => {
+        try {
+          const rideMatch = id.match(/^ride-(\d+)$/);
+          const deliveryMatch = id.match(/^delivery-(\d+)$/);
+          const ticketMatch = id.match(/^ticket-(\d+)$/);
+          if (rideMatch || deliveryMatch || ticketMatch) {
+            initLocalDatabase();
+            const userId = await getSessionUserId();
+            if (!active) {
+              return;
+            }
+            if (userId == null) {
+              setActivity(null);
+              setLoading(false);
+              return;
+            }
+            let act = null;
+            if (rideMatch) {
+              act = loadRideAsActivity(Number(rideMatch[1]), userId);
+            } else if (deliveryMatch) {
+              act = loadDeliveryAsActivity(Number(deliveryMatch[1]), userId);
+            } else if (ticketMatch) {
+              act = loadTicketAsActivity(Number(ticketMatch[1]), userId);
+            }
+            setActivity(act);
+            setLoading(false);
+            return;
+          }
+          if (!active) {
+            return;
+          }
+          setActivity(null);
+          setLoading(false);
+        } catch (e) {
+          console.error(e);
+          if (active) {
+            setActivity(null);
+            setLoading(false);
+          }
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [id])
+  );
+
   const meta = activity ? typeMeta(activity.type) : null;
   const st = activity ? statusStyle(activity.status) : null;
   const isDelivery = activity?.type === 'delivery';
+  const isTicket = activity?.type === 'ticket';
   const deliveryParts = useMemo(
     () => (activity && isDelivery ? deliveryRouteParts(activity) : null),
     [activity, isDelivery]
   );
   const routeParts = useMemo(() => {
-    if (!activity || isDelivery) return { origin: null, rest: '' };
+    if (!activity || isDelivery || isTicket) return { origin: null, rest: '' };
+    if (activity.pickupName && activity.destinationName) {
+      return { origin: activity.pickupName, rest: activity.destinationName };
+    }
     return splitRouteSubtitle(activity.subtitle);
-  }, [activity, isDelivery]);
+  }, [activity, isDelivery, isTicket]);
 
-  const reference = id ? `OH-2024-${id.padStart(4, '0')}` : '—';
+  const reference = activity?.rideCode || activity?.deliveryCode || activity?.bookingCode || '—';
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <View style={styles.header}>
+          <Pressable style={styles.backButton} onPress={() => router.back()} hitSlop={12}>
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </Pressable>
+          <Text style={styles.headerTitle}>Detalhe</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.missingBody}>
+          <ActivityIndicator size="large" color="#006AFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!activity || !meta || !st) {
     return (
@@ -102,6 +177,8 @@ export default function ActivityDetailScreen() {
             </>
           ) : isDelivery && deliveryParts && !deliveryParts.pickup ? (
             <Text style={styles.plainSummary}>{deliveryParts.destination}</Text>
+          ) : isTicket ? (
+            <Text style={styles.plainSummary}>{activity.subtitle}</Text>
           ) : routeParts.origin ? (
             <>
               <View style={styles.summaryRow}>
@@ -128,7 +205,9 @@ export default function ActivityDetailScreen() {
             <Text style={styles.refTextSecondary}>Referência no local: {activity.deliveryReference}</Text>
           ) : null}
 
-          <Text style={styles.sectionTitle}>{isDelivery ? 'Detalhes do pedido' : 'Informação'}</Text>
+          <Text style={styles.sectionTitle}>
+            {isDelivery ? 'Detalhes do pedido' : isTicket ? 'Detalhes do bilhete' : 'Informação'}
+          </Text>
           <View style={styles.metricsGroup}>
             <View style={styles.metricRow}>
               <Ionicons name="calendar-outline" size={17} color="#0A2547" />
@@ -139,6 +218,24 @@ export default function ActivityDetailScreen() {
                 </Text>
               </View>
             </View>
+            {isTicket && activity.passengerName ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="person-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Passageiro</Text>
+                  <Text style={styles.metricValue}>{activity.passengerName}</Text>
+                </View>
+              </View>
+            ) : null}
+            {isTicket && activity.passengerPhone ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="call-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Telefone</Text>
+                  <Text style={styles.metricValue}>{activity.passengerPhone}</Text>
+                </View>
+              </View>
+            ) : null}
             {isDelivery && activity.itemCategory ? (
               <View style={styles.metricRow}>
                 <Ionicons name="cube-outline" size={17} color="#0A2547" />
@@ -175,6 +272,33 @@ export default function ActivityDetailScreen() {
                 </View>
               </View>
             ) : null}
+            {!isDelivery && activity.distanceKm ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="navigate-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Distância</Text>
+                  <Text style={styles.metricValue}>{activity.distanceKm}</Text>
+                </View>
+              </View>
+            ) : null}
+            {!isDelivery && activity.durationMin ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="time-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Duração</Text>
+                  <Text style={styles.metricValue}>{activity.durationMin}</Text>
+                </View>
+              </View>
+            ) : null}
+            {!isDelivery && activity.rideType ? (
+              <View style={styles.metricRow}>
+                <Ionicons name="car-outline" size={17} color="#0A2547" />
+                <View style={styles.metricCopy}>
+                  <Text style={styles.metricLabel}>Tipo de corrida</Text>
+                  <Text style={styles.metricValue}>{activity.rideType}</Text>
+                </View>
+              </View>
+            ) : null}
             {isDelivery && activity.courierName ? (
               <View style={styles.metricRow}>
                 <Ionicons name="bicycle-outline" size={17} color="#0A2547" />
@@ -207,7 +331,10 @@ export default function ActivityDetailScreen() {
           {activity.status === 'cancelled' ? (
             <View style={styles.noteBox}>
               <Ionicons name="information-circle-outline" size={20} color="#0A2547" />
-              <Text style={styles.noteText}>Esta atividade foi cancelada. Não foi gerado cobrança.</Text>
+              <Text style={styles.noteText}>
+                Esta atividade foi cancelada. Não foi gerada cobrança.
+                {activity.cancellationReason ? `\n\n${activity.cancellationReason}` : ''}
+              </Text>
             </View>
           ) : null}
 

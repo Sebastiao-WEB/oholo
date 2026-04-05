@@ -1,9 +1,12 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MOCK_ACTIVITIES, statusStyle, typeMeta } from '../../data/mockActivities';
+import { initLocalDatabase, listAllActivitiesForUser } from '../../db';
+import { statusStyle, typeMeta } from '../../data/mockActivities';
+import { getSessionUserId } from '../../utils/session';
 
 const FILTERS = [
   { id: 'all', label: 'Todas' },
@@ -16,16 +19,45 @@ export default function ActivitiesTabScreen() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
+  const [dbActivities, setDbActivities] = useState([]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      (async () => {
+        try {
+          initLocalDatabase();
+          const userId = await getSessionUserId();
+          if (!active) {
+            return;
+          }
+          if (userId == null) {
+            setDbActivities([]);
+            return;
+          }
+          setDbActivities(listAllActivitiesForUser(userId));
+        } catch (e) {
+          console.error(e);
+          if (active) {
+            setDbActivities([]);
+          }
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return MOCK_ACTIVITIES.filter((item) => {
+    return dbActivities.filter((item) => {
       if (filter !== 'all' && item.type !== filter) return false;
       if (!q) return true;
       const hay = `${item.title} ${item.subtitle} ${item.date}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [query, filter]);
+  }, [query, filter, dbActivities]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -38,7 +70,7 @@ export default function ActivitiesTabScreen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.screenSubtitle}>Histórico de corridas, delivery e bilhetes</Text>
+        <Text style={styles.screenSubtitle}>Histórico guardado neste dispositivo (SQLite)</Text>
 
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={20} color="#6B7D96" />
@@ -80,7 +112,11 @@ export default function ActivitiesTabScreen() {
               <Ionicons name="file-tray-outline" size={36} color="#006AFF" />
             </View>
             <Text style={styles.emptyTitle}>Nenhum resultado</Text>
-            <Text style={styles.emptyText}>Ajuste a pesquisa ou o filtro para ver as suas atividades.</Text>
+            <Text style={styles.emptyText}>
+              {dbActivities.length === 0
+                ? 'Inicie sessão e use corridas, delivery ou bilhetes para ver o histórico aqui.'
+                : 'Ajuste a pesquisa ou o filtro para ver as suas atividades.'}
+            </Text>
           </View>
         ) : (
           <View style={styles.list}>

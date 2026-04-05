@@ -104,7 +104,7 @@ export function statusStyle(status) {
     case 'completed':
       return { bg: '#E6F7EF', color: '#1B7A4C', border: '#B8E5CC' };
     case 'cancelled':
-      return { bg: '#F3F4F6', color: '#5C6470', border: '#DDE1E6' };
+      return { bg: '#FEECEC', color: '#B42318', border: '#F5A8A8' };
     case 'active':
       return { bg: '#E8FAFC', color: '#0A6B82', border: '#B8E8F0' };
     default:
