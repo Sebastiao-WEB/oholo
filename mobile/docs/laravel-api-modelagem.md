@@ -4,7 +4,7 @@ Documento de referência para implementação do back-end em **Laravel** + **MyS
 
 **Versão sugerida da API:** `v1` (prefixo `/api/v1`).
 
-**Autenticação:** [Laravel Sanctum](https://laravel.com/docs/sanctum) com tokens pessoais ou SPA; para mobile nativo, **Personal Access Tokens** (header `Authorization: Bearer {token}`) é o caminho mais simples. Alternativa: OAuth2 com Laravel Passport se precisarem de terceiros.
+**Autenticação:** **JWT** (JSON Web Token). O cliente envia em cada pedido protegido o header `Authorization: Bearer {access_token}`. Implementação típica em Laravel com o pacote [**tymon/jwt-auth**](https://github.com/tymondesigns/jwt-auth) (guard `api` + middleware JWT) ou solução equivalente alinhada à v11+ do framework. Recomenda-se **access token** de TTL curto (ex.: 15–60 min) e **refresh token** (rota dedicada ou cookie httpOnly, conforme política de segurança) para a app mobile não forçar novo login constante.
 
 **Formato:** JSON; datas em **ISO 8601** (UTC ou com offset); valores monetários em **decimal** (MT); distâncias em **km**.
 
@@ -36,16 +36,17 @@ Códigos HTTP: `401` não autenticado, `403` proibido, `404` não encontrado, `4
 
 ---
 
-## 2. Autenticação e sessão
+## 2. Autenticação e sessão (JWT)
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| `POST` | `/api/v1/auth/register` | Registo (telefone, nome, password, email opcional) |
-| `POST` | `/api/v1/auth/login` | Login com `phone` + `password` → devolve `token` + `user` |
-| `POST` | `/api/v1/auth/logout` | Revoga token atual (Sanctum) |
+| `POST` | `/api/v1/auth/register` | Registo (telefone, nome, password, email opcional) → opcionalmente já devolve par JWT + `user` |
+| `POST` | `/api/v1/auth/login` | Login com `phone` + `password` → devolve `access_token` (+ `refresh_token` se usarem fluxo refresh) + `user` |
+| `POST` | `/api/v1/auth/refresh` | Body: `refresh_token` (ou cookie) → novo `access_token` (e novo refresh, se rotação estiver ativa) |
+| `POST` | `/api/v1/auth/logout` | Invalida o JWT atual (lista negra / blacklist no Redis ou driver do pacote) e, se aplicável, revoga refresh |
 | `POST` | `/api/v1/auth/password/forgot` | Inicia fluxo reset (SMS/email conforme política) |
-| `POST` | `/api/v1/auth/password/reset` | Confirma nova password com token |
-| `GET` | `/api/v1/auth/me` | Utilizador autenticado + flags (`is_provider`, etc.) |
+| `POST` | `/api/v1/auth/password/reset` | Confirma nova password com **token de reset** (não confundir com JWT de sessão) |
+| `GET` | `/api/v1/auth/me` | Utilizador autenticado + flags (`is_provider`, etc.) — requer `Authorization: Bearer` válido |
 
 **Corpo exemplo `login`:**
 
@@ -57,12 +58,14 @@ Códigos HTTP: `401` não autenticado, `403` proibido, `404` não encontrado, `4
 }
 ```
 
-**Resposta `login`:**
+**Resposta `login` (exemplo):**
 
 ```json
 {
-  "token": "1|xxxxxxxx",
+  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
   "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "opaque-or-jwt-refresh...",
   "user": {
     "id": 1,
     "name": "Maria",
@@ -73,6 +76,10 @@ Códigos HTTP: `401` não autenticado, `403` proibido, `404` não encontrado, `4
   }
 }
 ```
+
+O campo `refresh_token` é opcional no contrato mínimo; pode ser omitido se usarem apenas access JWT com TTL longo (menos recomendado) ou outro mecanismo.
+
+**Claims JWT úteis no payload (exemplo):** `sub` (user id), `iat`, `exp`, opcionalmente `phone` ou `role` (evitar dados sensíveis volumosos no token).
 
 ---
 
@@ -265,7 +272,7 @@ Endpoints de “ofertas” podem ser REST (`GET .../offers`) ou eventos só por 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | `POST` | `/api/v1/payments/intent` | Cria intenção para `ride`, `delivery` ou `ticket` |
-| `POST` | `/api/v1/payments/mpesa/callback` | Webhook (rota sem auth Sanctum; validar assinatura) |
+| `POST` | `/api/v1/payments/mpesa/callback` | Webhook (rota **sem** JWT de utilizador; validar assinatura / IP do operador) |
 | `POST` | `/api/v1/payments/emola/callback` | Idem |
 | `GET` | `/api/v1/payments/{id}` | Estado do pagamento |
 
@@ -317,9 +324,11 @@ app/
     DispatchRideOffersJob.php
 ```
 
-**Rotas:** ficheiro `routes/api.php` com grupo `prefix('v1')` + `middleware('auth:sanctum')` nos endpoints protegidos.
+**Rotas:** ficheiro `routes/api.php` com grupo `prefix('v1')` + middleware JWT nos endpoints protegidos (ex.: `middleware('auth:api')` com guard `api` configurado para o driver JWT, ou middleware `jwt.auth` conforme o pacote escolhido).
 
 **Policies:** `RidePolicy`, `DeliveryPolicy` — cliente só altera o próprio pedido; motorista só o que aceitou.
+
+**Pacote:** configurar `User` com interface `JWTSubject` (`tymon/jwt-auth`), `jwt.php` (TTL, blacklist, algoritmo `HS256` ou `RS256` em produção com par de chaves).
 
 ---
 
@@ -335,8 +344,10 @@ Garantir nas migrações Laravel (além do MVP .md):
 
 ## 14. Rate limiting e segurança
 
-- Throttle `login` / `register` por IP + telefone.
+- Throttle `login` / `register` / `refresh` por IP + telefone.
 - Throttle `provider/location`.
+- JWT: preferir **RS256** com chave privada só no servidor; em **HS256** guardar `JWT_SECRET` forte e rotacionar com cuidado.
+- Blacklist de tokens no **logout** e, se desejado, em alteração de password; TTL da blacklist ≥ TTL máximo dos tokens emitidos.
 - CORS restrito a domínios conhecidos (se houver web); app mobile não usa CORS da mesma forma.
 - Validação estrita de coordenadas (Mozambique bbox opcional).
 - **HTTPS** obrigatório em produção.
@@ -348,7 +359,7 @@ Garantir nas migrações Laravel (além do MVP .md):
 1. Substituir `initLocalDatabase` + inserts locais por chamadas `POST/PATCH` nos mesmos momentos (confirmar corrida, cancelar, concluir).
 2. Manter SQLite como **cache offline** opcional (sync quando online) — fase 2.
 3. Ecrãs de pesquisa: `GET` candidatos ou subscrição a evento de “motorista atribuído”.
-4. Token Sanctum em `SecureStore` / `expo-secure-store`.
+4. Guardar `access_token` e `refresh_token` em **`expo-secure-store`** (ou equivalente); interceptor HTTP: em `401` tentar `POST /auth/refresh` uma vez e repetir o pedido; se falhar, limpar tokens e ir para login.
 
 ---
 
