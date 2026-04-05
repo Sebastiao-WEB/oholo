@@ -5,6 +5,9 @@ import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-nativ
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { listMapDrivers, pickRandomMapDriver } from '../db';
+import { persistCancelledRideFromParams } from '../utils/persistActivityHistory';
+
 const NAMPULA_REGION = {
   latitude: -15.1165,
   longitude: 39.2666,
@@ -18,7 +21,9 @@ export default function RideSearchingScreen() {
   const mapRef = useRef(null);
   const radarAnim = useRef(new Animated.Value(0)).current;
   const [isDriverAssigned, setIsDriverAssigned] = useState(false);
+  const [mapDrivers, setMapDrivers] = useState([]);
 
+  const rideCode = String(params.rideCode || '');
   const pickupName = String(params.pickupName || 'Mercado Central');
   const destinationName = String(params.destinationName || 'Hospital Central');
   const rideType = String(params.rideType || 'Económica');
@@ -105,7 +110,15 @@ export default function RideSearchingScreen() {
     fetchRoute();
   }, [pickupCoordinate, destinationCoordinate]);
 
-  const carMarkers = useMemo(
+  useEffect(() => {
+    try {
+      setMapDrivers(listMapDrivers('ride', pickupLat, pickupLon));
+    } catch {
+      setMapDrivers([]);
+    }
+  }, [pickupLat, pickupLon]);
+
+  const fallbackMarkers = useMemo(
     () => [
       { latitude: pickupLat - 0.007, longitude: pickupLon - 0.008 },
       { latitude: pickupLat + 0.003, longitude: pickupLon + 0.01 },
@@ -115,21 +128,22 @@ export default function RideSearchingScreen() {
     [pickupLat, pickupLon, destinationLat, destinationLon]
   );
 
-  const nearestDriver = useMemo(() => {
-    if (!carMarkers.length) return null;
-    const distance = (a, b) => Math.hypot(a.latitude - b.latitude, a.longitude - b.longitude);
-    return carMarkers.reduce((nearest, current) =>
-      distance(current, pickupCoordinate) < distance(nearest, pickupCoordinate) ? current : nearest
-    );
-  }, [carMarkers, pickupCoordinate]);
+  const carMarkers = mapDrivers.length > 0 ? mapDrivers : fallbackMarkers;
+
+  /** Um candidato escolhido ao acaso a cada pedido (aceitação / disponibilidade, não só distância). */
+  const assignedDriver = useMemo(() => {
+    if (mapDrivers.length > 0) return pickRandomMapDriver(mapDrivers);
+    if (fallbackMarkers.length) return pickRandomMapDriver(fallbackMarkers);
+    return null;
+  }, [mapDrivers, fallbackMarkers]);
 
   useEffect(() => {
     const fetchNearestDriverRoute = async () => {
-      if (!nearestDriver || !isDriverAssigned) return;
-      setDriverRouteCoordinates([nearestDriver, pickupCoordinate]);
+      if (!assignedDriver || !isDriverAssigned) return;
+      setDriverRouteCoordinates([assignedDriver, pickupCoordinate]);
 
       try {
-        const start = `${nearestDriver.longitude},${nearestDriver.latitude}`;
+        const start = `${assignedDriver.longitude},${assignedDriver.latitude}`;
         const end = `${pickupCoordinate.longitude},${pickupCoordinate.latitude}`;
         const response = await fetch(
           `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`
@@ -138,19 +152,19 @@ export default function RideSearchingScreen() {
         const coordinates = data?.routes?.[0]?.geometry?.coordinates;
 
         if (!coordinates || coordinates.length < 2) {
-          setDriverRouteCoordinates([nearestDriver, pickupCoordinate]);
+          setDriverRouteCoordinates([assignedDriver, pickupCoordinate]);
           return;
         }
 
         const parsed = coordinates.map(([longitude, latitude]) => ({ latitude, longitude }));
         setDriverRouteCoordinates(parsed);
       } catch (error) {
-        setDriverRouteCoordinates([nearestDriver, pickupCoordinate]);
+        setDriverRouteCoordinates([assignedDriver, pickupCoordinate]);
       }
     };
 
     fetchNearestDriverRoute();
-  }, [nearestDriver, pickupCoordinate, isDriverAssigned]);
+  }, [assignedDriver, pickupCoordinate, isDriverAssigned]);
 
   useEffect(() => {
     const allCoordinates = [...routeCoordinates, ...driverRouteCoordinates];
@@ -164,12 +178,25 @@ export default function RideSearchingScreen() {
 
   useEffect(() => {
     if (!isDriverAssigned) return;
-    if (!nearestDriver) return;
+    if (!assignedDriver) return;
 
     const timer = setTimeout(() => {
+      const driverParams =
+        assignedDriver && typeof assignedDriver.userId === 'number'
+          ? {
+              driverUserId: String(assignedDriver.userId),
+              driverName: assignedDriver.name,
+              driverVehicleLine: assignedDriver.vehicleLine,
+              driverPlate: assignedDriver.plateNumber,
+              ...(assignedDriver.avatarUri ? { driverAvatarUri: assignedDriver.avatarUri } : {}),
+              ...(assignedDriver.phone ? { driverPhone: assignedDriver.phone } : {}),
+            }
+          : {};
+
       router.push({
         pathname: '/ride-in-progress',
         params: {
+          rideCode,
           pickupName,
           destinationName,
           rideType,
@@ -181,8 +208,9 @@ export default function RideSearchingScreen() {
           pickupLon: String(pickupLon),
           destinationLat: String(destinationLat),
           destinationLon: String(destinationLon),
-          driverLat: String(nearestDriver.latitude),
-          driverLon: String(nearestDriver.longitude),
+          driverLat: String(assignedDriver.latitude),
+          driverLon: String(assignedDriver.longitude),
+          ...driverParams,
         },
       });
     }, 5000);
@@ -191,6 +219,7 @@ export default function RideSearchingScreen() {
   }, [
     isDriverAssigned,
     router,
+    rideCode,
     pickupName,
     destinationName,
     rideType,
@@ -198,7 +227,7 @@ export default function RideSearchingScreen() {
     paymentMethod,
     etaMin,
     distanceKm,
-    nearestDriver,
+    assignedDriver,
     pickupLat,
     pickupLon,
     destinationLat,
@@ -264,12 +293,15 @@ export default function RideSearchingScreen() {
           </Marker>
 
           {carMarkers.map((car, index) => (
-            <Marker key={index} coordinate={car}>
-              <View style={[styles.carDot, isDriverAssigned && nearestDriver === car && styles.carDotNearest]}>
+            <Marker
+              key={typeof car.userId === 'number' ? `d-${car.userId}` : `f-${index}`}
+              coordinate={car}
+            >
+              <View style={[styles.carDot, isDriverAssigned && assignedDriver === car && styles.carDotNearest]}>
                 <Ionicons
                   name="car-sport"
                   size={12}
-                  color={isDriverAssigned && nearestDriver === car ? '#1E8E3E' : '#1A87E6'}
+                  color={isDriverAssigned && assignedDriver === car ? '#1E8E3E' : '#1A87E6'}
                 />
               </View>
             </Marker>
@@ -312,7 +344,25 @@ export default function RideSearchingScreen() {
           <Text style={styles.infoValue}>{estimatedPrice} MT</Text>
         </View>
 
-        <Pressable style={styles.cancelButton} onPress={() => router.replace('/(tabs)')}>
+        <Pressable
+          style={styles.cancelButton}
+          onPress={async () => {
+            await persistCancelledRideFromParams({
+              rideCode,
+              pickupName,
+              destinationName,
+              estimatedPrice,
+              paymentMethod,
+              rideType,
+              pickupLat: String(pickupLat),
+              pickupLon: String(pickupLon),
+              destinationLat: String(destinationLat),
+              destinationLon: String(destinationLon),
+              distanceKm,
+            });
+            router.replace('/(tabs)');
+          }}
+        >
           <Text style={styles.cancelText}>Cancelar pedido</Text>
         </Pressable>
       </View>

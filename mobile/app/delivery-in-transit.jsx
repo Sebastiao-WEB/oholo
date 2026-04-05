@@ -5,6 +5,8 @@ import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { persistCancelledDeliveryFromParams } from '../utils/persistActivityHistory';
+
 const USE_MOCK_TRIP_DURATION = __DEV__;
 const MOCK_TRIP_DURATION_SECONDS = 20;
 
@@ -14,6 +16,7 @@ export default function DeliveryInTransitScreen() {
   const mapRef = useRef(null);
   const hasNavigatedToCompletedRef = useRef(false);
 
+  const deliveryCode = String(params.deliveryCode || '');
   const pickupName = String(params.pickupName || 'Origem');
   const destinationName = String(params.destinationName || 'Destino');
   const deliveryFee = String(params.deliveryFee || params.estimatedPrice || '0');
@@ -21,6 +24,11 @@ export default function DeliveryInTransitScreen() {
   const itemDescription = String(params.itemDescription || '');
   const distanceKm = String(params.distanceKm || '3,2');
   const categoryId = String(params.categoryId || 'documents');
+  const riderName = String(params.riderName || 'Mário Salimo');
+  const riderVehicle = String(params.riderVehicle || 'Mota azul');
+  const riderPlate = String(params.riderPlate || 'NPL-45-112-MZ');
+  const riderAvatarUri = String(params.riderAvatarUri || '').trim();
+  const riderPhone = String(params.riderPhone || '').trim();
   const pickupLat = Number(params.pickupLat || -15.1234);
   const pickupLon = Number(params.pickupLon || 39.2612);
   const destinationLat = Number(params.destinationLat || -15.1096);
@@ -123,6 +131,7 @@ export default function DeliveryInTransitScreen() {
       router.replace({
         pathname: '/delivery-completed',
         params: {
+          deliveryCode,
           pickupName,
           destinationName,
           deliveryFee,
@@ -137,6 +146,11 @@ export default function DeliveryInTransitScreen() {
           pickupLon: String(pickupLon),
           destinationLat: String(destinationLat),
           destinationLon: String(destinationLon),
+          riderName,
+          riderVehicle,
+          riderPlate,
+          ...(riderAvatarUri ? { riderAvatarUri } : {}),
+          ...(riderPhone ? { riderPhone } : {}),
         },
       });
     }, 1200);
@@ -147,6 +161,7 @@ export default function DeliveryInTransitScreen() {
     tripEtaSeconds,
     distanceKm,
     router,
+    deliveryCode,
     pickupName,
     destinationName,
     deliveryFee,
@@ -157,6 +172,11 @@ export default function DeliveryInTransitScreen() {
     pickupLon,
     destinationLat,
     destinationLon,
+    riderName,
+    riderVehicle,
+    riderPlate,
+    riderAvatarUri,
+    riderPhone,
   ]);
 
   const handleShareLocation = async () => {
@@ -230,7 +250,24 @@ export default function DeliveryInTransitScreen() {
             <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Partilhar localização</Text>
           </Pressable>
-          <Pressable style={[styles.actionButton, styles.cancelButton]} onPress={() => router.replace('/(tabs)')}>
+          <Pressable
+            style={[styles.actionButton, styles.cancelButton]}
+            onPress={async () => {
+              await persistCancelledDeliveryFromParams({
+                deliveryCode,
+                pickupName,
+                destinationName,
+                deliveryFee,
+                paymentMethod,
+                itemDescription,
+                pickupLat: String(pickupLat),
+                pickupLon: String(pickupLon),
+                destinationLat: String(destinationLat),
+                destinationLon: String(destinationLon),
+              });
+              router.replace('/(tabs)');
+            }}
+          >
             <Ionicons name="close-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Cancelar localização</Text>
           </Pressable>

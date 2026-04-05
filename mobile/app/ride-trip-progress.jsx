@@ -5,6 +5,8 @@ import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { persistCancelledRideFromParams } from '../utils/persistActivityHistory';
+
 const USE_MOCK_TRIP_DURATION = __DEV__;
 const MOCK_TRIP_DURATION_SECONDS = 20;
 
@@ -14,6 +16,7 @@ export default function RideTripProgressScreen() {
   const mapRef = useRef(null);
   const hasNavigatedToCompletedRef = useRef(false);
 
+  const rideCode = String(params.rideCode || '');
   const pickupName = String(params.pickupName || 'Origem');
   const destinationName = String(params.destinationName || 'Destino');
   const estimatedPrice = String(params.estimatedPrice || '23');
@@ -24,6 +27,11 @@ export default function RideTripProgressScreen() {
   const pickupLon = Number(params.pickupLon || 39.2612);
   const destinationLat = Number(params.destinationLat || -15.1096);
   const destinationLon = Number(params.destinationLon || 39.2864);
+  const driverName = String(params.driverName || 'Motorista');
+  const driverVehicleLine = String(params.driverVehicleLine || 'Veículo Oholo');
+  const driverPlate = String(params.driverPlate || '—');
+  const driverAvatarUri = String(params.driverAvatarUri || '').trim();
+  const driverPhone = String(params.driverPhone || '').trim();
 
   const pickupCoordinate = useMemo(
     () => ({ latitude: pickupLat, longitude: pickupLon }),
@@ -122,6 +130,7 @@ export default function RideTripProgressScreen() {
       router.replace({
         pathname: '/ride-completed',
         params: {
+          rideCode,
           pickupName,
           destinationName,
           estimatedPrice,
@@ -129,12 +138,41 @@ export default function RideTripProgressScreen() {
           rideType,
           totalTimeMin: String(totalMinutes),
           distanceKm: safeDistance,
+          pickupLat: String(pickupLat),
+          pickupLon: String(pickupLon),
+          destinationLat: String(destinationLat),
+          destinationLon: String(destinationLon),
+          driverName,
+          driverVehicleLine,
+          driverPlate,
+          ...(driverAvatarUri ? { driverAvatarUri } : {}),
+          ...(driverPhone ? { driverPhone } : {}),
         },
       });
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [etaRemainingSeconds, tripEtaSeconds, distanceKm, router, pickupName, destinationName, estimatedPrice, paymentMethod, rideType]);
+  }, [
+    etaRemainingSeconds,
+    tripEtaSeconds,
+    distanceKm,
+    router,
+    rideCode,
+    pickupName,
+    destinationName,
+    estimatedPrice,
+    paymentMethod,
+    rideType,
+    pickupLat,
+    pickupLon,
+    destinationLat,
+    destinationLon,
+    driverName,
+    driverVehicleLine,
+    driverPlate,
+    driverAvatarUri,
+    driverPhone,
+  ]);
 
   const handleShareLocation = async () => {
     try {
@@ -207,7 +245,25 @@ export default function RideTripProgressScreen() {
             <Ionicons name="share-social-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Partilhar localização</Text>
           </Pressable>
-          <Pressable style={[styles.actionButton, styles.cancelButton]} onPress={() => router.replace('/(tabs)')}>
+          <Pressable
+            style={[styles.actionButton, styles.cancelButton]}
+            onPress={async () => {
+              await persistCancelledRideFromParams({
+                rideCode,
+                pickupName,
+                destinationName,
+                estimatedPrice,
+                paymentMethod,
+                rideType,
+                pickupLat: String(pickupLat),
+                pickupLon: String(pickupLon),
+                destinationLat: String(destinationLat),
+                destinationLon: String(destinationLon),
+                distanceKm,
+              });
+              router.replace('/(tabs)');
+            }}
+          >
             <Ionicons name="close-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Cancelar localização</Text>
           </Pressable>

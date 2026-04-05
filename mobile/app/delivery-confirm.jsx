@@ -276,10 +276,12 @@ export default function DeliveryConfirmScreen() {
       <View style={styles.footer}>
         <Pressable
           style={styles.confirmButton}
-          onPress={() =>
+          onPress={() => {
+            const deliveryCode = `DLV-${Date.now()}-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
             router.push({
               pathname: '/delivery-searching',
               params: {
+                deliveryCode,
                 pickupName,
                 destinationName,
                 pickupLat,
@@ -296,8 +298,8 @@ export default function DeliveryConfirmScreen() {
                 paymentMethod: selectedPaymentLabel,
                 serviceType: selectedServiceData.label,
               },
-            })
-          }
+            });
+          }}
         >
           <Text style={styles.confirmButtonText}>Confirmar pedido</Text>
         </Pressable>

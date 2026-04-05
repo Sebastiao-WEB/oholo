@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { persistCancelledDeliveryFromParams } from '../utils/persistActivityHistory';
+import { openPhoneDialer } from '../utils/openPhoneDialer';
 
 const USE_MOCK_DRIVER_ARRIVAL_DURATION = __DEV__;
 const MOCK_DRIVER_ARRIVAL_SECONDS = 20;
@@ -14,6 +18,14 @@ export default function DeliveryCourierPickupScreen() {
   const mapRef = useRef(null);
   const hasNavigatedToTripRef = useRef(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+      return () => sub.remove();
+    }, [])
+  );
+
+  const deliveryCode = String(params.deliveryCode || '');
   const pickupName = String(params.pickupName || 'Origem');
   const destinationName = String(params.destinationName || 'Destino');
   const deliveryFee = String(params.deliveryFee || params.estimatedPrice || '0');
@@ -32,6 +44,20 @@ export default function DeliveryCourierPickupScreen() {
   const destinationLon = Number(params.destinationLon || 39.2864);
   const driverLat = Number(params.driverLat || -15.1163);
   const driverLon = Number(params.driverLon || 39.2726);
+  const riderName = String(params.riderName || 'Entregador');
+  const riderVehicle = String(params.riderVehicle || 'Entrega Oholo');
+  const riderPlate = String(params.riderPlate || '—');
+  const riderAvatarUri = String(params.riderAvatarUri || '').trim();
+  const riderVehicleType = String(params.riderVehicleType || 'motorbike');
+  const riderPhone = String(params.riderPhone || '').trim();
+
+  const riderPhotoSource =
+    riderAvatarUri && (riderAvatarUri.startsWith('http') || riderAvatarUri.startsWith('file:'))
+      ? { uri: riderAvatarUri }
+      : require('../assets/img/avatar.png');
+
+  const courierMapIcon =
+    riderVehicleType === 'car' ? 'car-sport' : riderVehicleType === 'van' ? 'bus' : 'bicycle';
 
   const pickupCoordinate = useMemo(
     () => ({ latitude: pickupLat, longitude: pickupLon }),
@@ -148,6 +174,7 @@ export default function DeliveryCourierPickupScreen() {
       router.replace({
         pathname: '/delivery-in-transit',
         params: {
+          deliveryCode,
           pickupName,
           destinationName,
           deliveryFee,
@@ -163,6 +190,11 @@ export default function DeliveryCourierPickupScreen() {
           categoryId,
           weightTier,
           sizeTier,
+          riderName,
+          riderVehicle,
+          riderPlate,
+          ...(riderAvatarUri ? { riderAvatarUri } : {}),
+          ...(riderPhone ? { riderPhone } : {}),
         },
       });
     }, baseEtaSeconds * 1000 + 3000);
@@ -172,6 +204,7 @@ export default function DeliveryCourierPickupScreen() {
     driverRouteCoordinates.length,
     baseEtaSeconds,
     router,
+    deliveryCode,
     pickupName,
     destinationName,
     deliveryFee,
@@ -186,14 +219,17 @@ export default function DeliveryCourierPickupScreen() {
     categoryId,
     weightTier,
     sizeTier,
+    riderName,
+    riderVehicle,
+    riderPlate,
+    riderAvatarUri,
+    riderPhone,
   ]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
-        </Pressable>
+        <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Entregador a caminho</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -214,10 +250,10 @@ export default function DeliveryCourierPickupScreen() {
           <Marker coordinate={movingDriverCoordinate} title="Motorista">
             <View style={styles.driverMarkerWrap}>
               <View style={styles.driverPin}>
-                <Image source={require('../assets/img/avatar.png')} style={styles.driverPinPhoto} />
+                <Image source={riderPhotoSource} style={styles.driverPinPhoto} />
               </View>
               <View style={styles.carPinAttached}>
-                <Ionicons name="bicycle" size={14} color="#0A2547" />
+                <Ionicons name={courierMapIcon} size={14} color="#0A2547" />
               </View>
             </View>
           </Marker>
@@ -228,11 +264,11 @@ export default function DeliveryCourierPickupScreen() {
         <View style={styles.dragger} />
 
         <View style={styles.driverRow}>
-          <Image source={require('../assets/img/avatar.png')} style={styles.driverPhoto} />
+          <Image source={riderPhotoSource} style={styles.driverPhoto} />
           <View style={styles.driverMeta}>
-            <Text style={styles.driverName}>Paulo Ernesto</Text>
-            <Text style={styles.driverCar}>Bicicleta · entrega Oholo</Text>
-            <Text style={styles.driverPlate}>NPL-DLV-102-MZ</Text>
+            <Text style={styles.driverName}>{riderName}</Text>
+            <Text style={styles.driverCar}>{riderVehicle}</Text>
+            <Text style={styles.driverPlate}>{riderPlate}</Text>
           </View>
         </View>
 
@@ -242,11 +278,33 @@ export default function DeliveryCourierPickupScreen() {
         </View>
 
         <View style={styles.actionsRow}>
-          <Pressable style={[styles.actionButton, styles.actionCall]}>
+          <Pressable
+            style={[styles.actionButton, styles.actionCall]}
+            onPress={() => openPhoneDialer(riderPhone)}
+            accessibilityRole="button"
+            accessibilityLabel="Ligar para o entregador"
+          >
             <Ionicons name="call-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Ligar</Text>
           </Pressable>
-          <Pressable style={[styles.actionButton, styles.actionCancel]} onPress={() => router.replace('/(tabs)')}>
+          <Pressable
+            style={[styles.actionButton, styles.actionCancel]}
+            onPress={async () => {
+              await persistCancelledDeliveryFromParams({
+                deliveryCode,
+                pickupName,
+                destinationName,
+                deliveryFee,
+                paymentMethod,
+                itemDescription,
+                pickupLat: String(pickupLat),
+                pickupLon: String(pickupLon),
+                destinationLat: String(destinationLat),
+                destinationLon: String(destinationLon),
+              });
+              router.replace('/(tabs)');
+            }}
+          >
             <Ionicons name="close-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Cancelar</Text>
           </Pressable>

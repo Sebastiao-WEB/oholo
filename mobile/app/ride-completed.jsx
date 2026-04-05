@@ -1,12 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useRef } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { initLocalDatabase, insertCompletedRide } from '../db';
+import { getSessionUserId } from '../utils/session';
 
 export default function RideCompletedScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const persistedRideCodeRef = useRef(null);
 
+  const rideCode = String(params.rideCode || '');
   const pickupName = String(params.pickupName || 'Centro de Nampula, Nampula');
   const destinationName = String(params.destinationName || 'Aeroporto de Nampula (APL)');
   const estimatedPrice = String(params.estimatedPrice || '23');
@@ -14,6 +20,70 @@ export default function RideCompletedScreen() {
   const distanceKm = String(params.distanceKm || '3,2');
   const paymentMethod = String(params.paymentMethod || 'M-Pesa');
   const rideType = String(params.rideType || 'Económica');
+  const pickupLat = Number(params.pickupLat || -15.1165);
+  const pickupLon = Number(params.pickupLon || 39.2666);
+  const destinationLat = Number(params.destinationLat || -15.11);
+  const destinationLon = Number(params.destinationLon || 39.28);
+
+  const driverName = String(params.driverName || 'Paulo Ernesto');
+  const driverVehicleLine = String(params.driverVehicleLine || 'Toyota Vitz branco');
+  const driverPlate = String(params.driverPlate || 'NPL-23-458-MZ');
+  const driverAvatarUri = String(params.driverAvatarUri || '').trim();
+  const driverPhotoSource =
+    driverAvatarUri && (driverAvatarUri.startsWith('http') || driverAvatarUri.startsWith('file:'))
+      ? { uri: driverAvatarUri }
+      : require('../assets/img/avatar.png');
+
+  useEffect(() => {
+    if (!rideCode || persistedRideCodeRef.current === rideCode) {
+      return;
+    }
+    persistedRideCodeRef.current = rideCode;
+
+    (async () => {
+      try {
+        initLocalDatabase();
+        const userId = await getSessionUserId();
+        if (userId == null) {
+          return;
+        }
+        const fare = Number.parseFloat(String(estimatedPrice).replace(',', '.'));
+        const dist = Number.parseFloat(String(distanceKm).replace(',', '.'));
+        const dur = Number.parseInt(String(totalTimeMin).replace(/\D/g, ''), 10);
+        insertCompletedRide({
+          customerUserId: userId,
+          rideCode,
+          pickupAddress: pickupName,
+          dropoffAddress: destinationName,
+          pickupLat,
+          pickupLon,
+          dropoffLat: destinationLat,
+          dropoffLon: destinationLon,
+          estimatedFare: Number.isFinite(fare) ? fare : 0,
+          finalFare: Number.isFinite(fare) ? fare : 0,
+          paymentMethod,
+          rideType,
+          routeDistanceKm: Number.isFinite(dist) ? dist : null,
+          durationMinutes: Number.isFinite(dur) ? dur : null,
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [
+    rideCode,
+    pickupName,
+    destinationName,
+    estimatedPrice,
+    totalTimeMin,
+    distanceKm,
+    paymentMethod,
+    rideType,
+    pickupLat,
+    pickupLon,
+    destinationLat,
+    destinationLon,
+  ]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -108,11 +178,11 @@ export default function RideCompletedScreen() {
 
           <Text style={styles.sectionTitle}>Detalhes do motorista</Text>
           <View style={styles.driverRow}>
-            <Image source={require('../assets/img/avatar.png')} style={styles.driverAvatar} />
+            <Image source={driverPhotoSource} style={styles.driverAvatar} />
             <View>
-              <Text style={styles.driverName}>Paulo Ernesto</Text>
-              <Text style={styles.driverMeta}>Toyota Vitz branco</Text>
-              <Text style={styles.driverMeta}>NPL-23-458-MZ</Text>
+              <Text style={styles.driverName}>{driverName}</Text>
+              <Text style={styles.driverMeta}>{driverVehicleLine}</Text>
+              <Text style={styles.driverMeta}>{driverPlate}</Text>
             </View>
           </View>
 

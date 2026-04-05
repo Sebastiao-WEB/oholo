@@ -1,9 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { persistCancelledRideFromParams } from '../utils/persistActivityHistory';
+import { openPhoneDialer } from '../utils/openPhoneDialer';
 
 const USE_MOCK_DRIVER_ARRIVAL_DURATION = __DEV__;
 const MOCK_DRIVER_ARRIVAL_SECONDS = 20;
@@ -14,6 +18,14 @@ export default function RideInProgressScreen() {
   const mapRef = useRef(null);
   const hasNavigatedToTripRef = useRef(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+      return () => sub.remove();
+    }, [])
+  );
+
+  const rideCode = String(params.rideCode || '');
   const pickupName = String(params.pickupName || 'Origem');
   const destinationName = String(params.destinationName || 'Destino');
   const estimatedPrice = String(params.estimatedPrice || '23');
@@ -28,6 +40,16 @@ export default function RideInProgressScreen() {
   const destinationLon = Number(params.destinationLon || 39.2864);
   const driverLat = Number(params.driverLat || -15.1163);
   const driverLon = Number(params.driverLon || 39.2726);
+  const driverName = String(params.driverName || 'Motorista');
+  const driverVehicleLine = String(params.driverVehicleLine || 'Veículo Oholo');
+  const driverPlate = String(params.driverPlate || '—');
+  const driverAvatarUri = String(params.driverAvatarUri || '').trim();
+  const driverPhone = String(params.driverPhone || '').trim();
+
+  const driverPhotoSource =
+    driverAvatarUri && (driverAvatarUri.startsWith('http') || driverAvatarUri.startsWith('file:'))
+      ? { uri: driverAvatarUri }
+      : require('../assets/img/avatar.png');
 
   const pickupCoordinate = useMemo(
     () => ({ latitude: pickupLat, longitude: pickupLon }),
@@ -144,6 +166,7 @@ export default function RideInProgressScreen() {
       router.replace({
         pathname: '/ride-trip-progress',
         params: {
+          rideCode,
           pickupName,
           destinationName,
           estimatedPrice,
@@ -154,6 +177,11 @@ export default function RideInProgressScreen() {
           pickupLon: String(pickupLon),
           destinationLat: String(destinationLat),
           destinationLon: String(destinationLon),
+          driverName,
+          driverVehicleLine,
+          driverPlate,
+          ...(driverAvatarUri ? { driverAvatarUri } : {}),
+          ...(driverPhone ? { driverPhone } : {}),
         },
       });
     }, baseEtaSeconds * 1000 + 3000);
@@ -163,6 +191,7 @@ export default function RideInProgressScreen() {
     driverRouteCoordinates.length,
     baseEtaSeconds,
     router,
+    rideCode,
     pickupName,
     destinationName,
     estimatedPrice,
@@ -173,14 +202,17 @@ export default function RideInProgressScreen() {
     pickupLon,
     destinationLat,
     destinationLon,
+    driverName,
+    driverVehicleLine,
+    driverPlate,
+    driverAvatarUri,
+    driverPhone,
   ]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
-        </Pressable>
+        <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Motorista encontrado</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -201,7 +233,7 @@ export default function RideInProgressScreen() {
           <Marker coordinate={movingDriverCoordinate} title="Motorista">
             <View style={styles.driverMarkerWrap}>
               <View style={styles.driverPin}>
-                <Image source={require('../assets/img/avatar.png')} style={styles.driverPinPhoto} />
+                <Image source={driverPhotoSource} style={styles.driverPinPhoto} />
               </View>
               <View style={styles.carPinAttached}>
                 <Ionicons name="car-sport" size={13} color="#0A2547" />
@@ -215,11 +247,11 @@ export default function RideInProgressScreen() {
         <View style={styles.dragger} />
 
         <View style={styles.driverRow}>
-          <Image source={require('../assets/img/avatar.png')} style={styles.driverPhoto} />
+          <Image source={driverPhotoSource} style={styles.driverPhoto} />
           <View style={styles.driverMeta}>
-            <Text style={styles.driverName}>Paulo Ernesto</Text>
-            <Text style={styles.driverCar}>Toyota Vitz branco</Text>
-            <Text style={styles.driverPlate}>NPL-23-458-MZ</Text>
+            <Text style={styles.driverName}>{driverName}</Text>
+            <Text style={styles.driverCar}>{driverVehicleLine}</Text>
+            <Text style={styles.driverPlate}>{driverPlate}</Text>
           </View>
         </View>
 
@@ -229,11 +261,35 @@ export default function RideInProgressScreen() {
         </View>
 
         <View style={styles.actionsRow}>
-          <Pressable style={[styles.actionButton, styles.actionCall]}>
+          <Pressable
+            style={[styles.actionButton, styles.actionCall]}
+            onPress={() => openPhoneDialer(driverPhone)}
+            accessibilityRole="button"
+            accessibilityLabel="Ligar para o motorista"
+          >
             <Ionicons name="call-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Ligar</Text>
           </Pressable>
-          <Pressable style={[styles.actionButton, styles.actionCancel]} onPress={() => router.replace('/(tabs)')}>
+          <Pressable
+            style={[styles.actionButton, styles.actionCancel]}
+            onPress={async () => {
+              await persistCancelledRideFromParams({
+                rideCode,
+                pickupName,
+                destinationName,
+                estimatedPrice,
+                paymentMethod,
+                rideType,
+                etaMin,
+                pickupLat: String(pickupLat),
+                pickupLon: String(pickupLon),
+                destinationLat: String(destinationLat),
+                destinationLon: String(destinationLon),
+                distanceKm,
+              });
+              router.replace('/(tabs)');
+            }}
+          >
             <Ionicons name="close-outline" size={16} color="#FFFFFF" />
             <Text style={styles.actionText}>Cancelar</Text>
           </Pressable>

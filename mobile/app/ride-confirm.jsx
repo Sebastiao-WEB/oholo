@@ -172,10 +172,12 @@ export default function RideConfirmScreen() {
       <View style={styles.footer}>
         <Pressable
           style={styles.confirmButton}
-          onPress={() =>
+          onPress={() => {
+            const rideCode = `OH-${Date.now()}-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
             router.push({
               pathname: '/ride-searching',
               params: {
+                rideCode,
                 pickupName,
                 destinationName,
                 rideType: selectedRideData.label,
@@ -188,8 +190,8 @@ export default function RideConfirmScreen() {
                 distanceKm: (distanceKm || 3.2).toFixed(1),
                 etaMin: selectedRideData.eta,
               },
-            })
-          }
+            });
+          }}
         >
           <Text style={styles.confirmButtonText}>Confirmar corrida</Text>
         </Pressable>

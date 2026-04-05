@@ -4,7 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { initLocalDatabase, insertDeliveredDelivery } from '../db';
 import { labelForDeliveryCategory } from '../utils/deliveryPricing';
+import { getSessionUserId } from '../utils/session';
 
 const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -37,8 +39,10 @@ export default function DeliveryCompletedScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const mapRef = useRef(null);
+  const persistedDeliveryCodeRef = useRef(null);
   const [mapLayout, setMapLayout] = useState({ width: 0, height: 0 });
 
+  const deliveryCode = String(params.deliveryCode || '');
   const pickupName = String(params.pickupName || 'Mercado Central');
   const destinationName = String(params.destinationName || 'Hospital Central');
   const deliveryFee = String(params.deliveryFee || params.estimatedPrice || '0');
@@ -54,6 +58,11 @@ export default function DeliveryCompletedScreen() {
   const riderName = String(params.riderName || 'Mário Salimo');
   const riderVehicle = String(params.riderVehicle || 'Mota azul');
   const riderPlate = String(params.riderPlate || 'NPL-45-112-MZ');
+  const riderAvatarUri = String(params.riderAvatarUri || '').trim();
+  const riderPhotoSource =
+    riderAvatarUri && (riderAvatarUri.startsWith('http') || riderAvatarUri.startsWith('file:'))
+      ? { uri: riderAvatarUri }
+      : require('../assets/img/avatar.png');
 
   const pickupLat = parseCoord(params.pickupLat);
   const pickupLon = parseCoord(params.pickupLon);
@@ -71,6 +80,48 @@ export default function DeliveryCompletedScreen() {
       ? { latitude: destinationLat, longitude: destinationLon }
       : { latitude: -15.1096, longitude: 39.2864 };
   }, [destinationLat, destinationLon]);
+
+  useEffect(() => {
+    if (!deliveryCode || persistedDeliveryCodeRef.current === deliveryCode) {
+      return;
+    }
+    persistedDeliveryCodeRef.current = deliveryCode;
+
+    (async () => {
+      try {
+        initLocalDatabase();
+        const userId = await getSessionUserId();
+        if (userId == null) {
+          return;
+        }
+        const fee = Number.parseFloat(String(deliveryFee).replace(',', '.'));
+        insertDeliveredDelivery({
+          customerUserId: userId,
+          deliveryCode,
+          pickupAddress: pickupName,
+          dropoffAddress: destinationName,
+          pickupLat: pickupCoord.latitude,
+          pickupLon: pickupCoord.longitude,
+          dropoffLat: destinationCoord.latitude,
+          dropoffLon: destinationCoord.longitude,
+          itemDescription,
+          deliveryFee: Number.isFinite(fee) ? fee : 0,
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, [
+    deliveryCode,
+    pickupName,
+    destinationName,
+    deliveryFee,
+    itemDescription,
+    pickupCoord.latitude,
+    pickupCoord.longitude,
+    destinationCoord.latitude,
+    destinationCoord.longitude,
+  ]);
 
   const miniMapRegion = useMemo(() => {
     const lat = (pickupCoord.latitude + destinationCoord.latitude) / 2;
@@ -286,7 +337,7 @@ export default function DeliveryCompletedScreen() {
         <Text style={styles.sectionHeading}>Rider details</Text>
         <View style={styles.riderCard}>
           <View style={styles.riderAvatarWrap}>
-            <Image source={require('../assets/img/icon.png')} style={styles.riderLogo} resizeMode="contain" />
+            <Image source={riderPhotoSource} style={styles.riderLogo} resizeMode="cover" />
           </View>
           <View style={styles.riderInfo}>
             <Text style={styles.riderName}>{riderName}</Text>
@@ -606,10 +657,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#0A1D37',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   riderLogo: {
-    width: 34,
-    height: 34,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   riderInfo: {
     flex: 1,
