@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     marginTop: -40,
   },
   logoWrap: {
-    marginBottom: 10,
+    marginBottom: -15,
   },
   logo: {
     width: 140,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLORS.white,
-    fontSize: 66,
+    fontSize: 50,
     fontWeight: '700',
     letterSpacing: 0.2,
     textShadowColor: '#02132980',
