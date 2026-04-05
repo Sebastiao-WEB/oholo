@@ -54,6 +54,9 @@ export default function HomeTabScreen() {
                 if (item.key === 'ride') {
                   router.push('/ride-request');
                 }
+                if (item.key === 'delivery') {
+                  router.push('/delivery-request');
+                }
                 if (item.key === 'work') {
                   router.push('/(tabs)/work');
                 }

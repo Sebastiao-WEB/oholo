@@ -5,7 +5,9 @@
 - Stack: React Native + Expo + Expo Router
 - Mapa: OpenStreetMap (`UrlTile`) + OSRM para rotas
 - Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída), histórico de atividades (lista + detalhe) e abas Trabalho e Perfil com UI alinhada ao restante app
+- **Delivery em curso:** `delivery-request` + `delivery-confirm` (resumo e taxa estimada; próximo passo: `delivery-searching`). Home: azulejo “Pedir delivery” → `/delivery-request`.
 - Extensão de telas: `.jsx`
+- Modelagem MVP (serviços, tabela `deliveries`, estados, API): ver `oholo_mvp_modelagem.md` na raiz de `mobile/` (documento **Via Connect**; app com marca **Oholo**).
 
 ## Paleta de cores aplicada
 - Primária: `#0A2547`
@@ -35,6 +37,9 @@
 - `app/ride-in-progress.jsx`
 - `app/ride-trip-progress.jsx`
 - `app/ride-completed.jsx`
+- `app/delivery-request.jsx` (mapa: recolha + entrega, Nampula, Nominatim/OSRM; **tipo de carga**, **peso** e **tamanho** para precificação; descrição livre opcional para o entregador)
+- `utils/deliveryPricing.js` (multiplicadores mock: categoria × peso × tamanho; categorias incl. documentos, electrónicos, roupa/calçado, comida, mercado; replicar ou substituir na API)
+- `app/delivery-confirm.jsx` (resumo do pedido, métricas e taxa estimada mock; botão confirma com `Alert` até existir `delivery-searching`)
 
 ## Fluxo de corrida implementado
 1. Usuário define origem/destino em `ride-request`.
@@ -43,6 +48,25 @@
 4. Vai para `ride-in-progress` (motorista indo até o ponto de origem, com ETA regressivo).
 5. Vai para `ride-trip-progress` (corrida em andamento de origem até destino, com ETA regressivo).
 6. Vai para `ride-completed` (resumo final da viagem).
+
+## Fluxo de delivery (planeado — a implementar)
+
+Baseado em `oholo_mvp_modelagem.md` (tabela **`deliveries`**, estados `requested` → `accepted` → `picked_up` → `in_transit` → `delivered`, ou `cancelled`). O fluxo no telemóvel deve **reutilizar o padrão visual e técnico** do fluxo de corrida (barra superior `#0A2547`, mapa OSM + OSRM, Nampula, `SafeAreaView`, métodos de pagamento como em `ride-confirm`).
+
+| Ordem | Ficheiro / rota Expo | Função na app | Ligação ao estado em `deliveries` (quando existir API) |
+| :---: | --- | --- | --- |
+| 1 | `app/delivery-request.jsx` (`/delivery-request`) | **Implementado.** Mapa: **recolha** e **entrega**; Nominatim; OSRM; **descrição do item**; Nampula. | Rascunho → `delivery-confirm` com params |
+| 2 | `app/delivery-confirm.jsx` (`/delivery-confirm`) | **Parcial:** resumo + taxa estimada (mock). Falta: pagamento, chips M-Pesa/e-Mola, tipo de serviço. | `requested` após API |
+| 3 | `app/delivery-searching.jsx` (`/delivery-searching`) | Animação / mapa à procura de entregador; rota até estafeta atribuído. | `requested` → `accepted` |
+| 4 | `app/delivery-courier-pickup.jsx` (`/delivery-courier-pickup`) | Entregador a caminho do **local de recolha**; ETA; contacto/cancelar (padrão `ride-in-progress`). | `accepted` |
+| 5 | `app/delivery-in-transit.jsx` (`/delivery-in-transit`) | Encomenda a caminho do **destino**; ETA; partilhar localização (padrão `ride-trip-progress`). | `picked_up` → `in_transit` |
+| 6 | `app/delivery-completed.jsx` (`/delivery-completed`) | Resumo: locais, descrição, taxa, pagamento, código `delivery_code` (mock até API). | `delivered` |
+
+**Cancelamento:** qualquer ecrã antes de concluído pode oferecer cancelar → alinhar com `cancelled` + `cancellation_reason` no back-end.
+
+**Dev (opcional):** como na corrida, flags `__DEV__` com tempos curtos para simular transições entre ecrãs sem esperar OSRM.
+
+**Home:** em `app/(tabs)/index.jsx`, o azulejo “Pedir delivery” chama `router.push('/delivery-request')`.
 
 ## Fluxo de atividades (histórico)
 - Aba **Atividades**: lista com filtros (Todas / Corridas / Delivery / Bilhetes) e pesquisa.
@@ -88,9 +112,9 @@
 
 ## Como retomar rapidamente
 1. Abrir o projeto.
-2. Ler este arquivo: `HISTORICO_CONTINUIDADE_OHOLO.md`.
-3. Pedir ao assistente para continuar do último estado do fluxo de corridas.
-4. Enviar o próximo mockup a ser implementado.
+2. Ler este arquivo: `HISTORICO_CONTINUIDADE_OHOLO.md` e, para regras de dados, `oholo_mvp_modelagem.md`.
+3. Pedir ao assistente para continuar pelo fluxo em curso (ex.: **delivery** conforme tabela acima) ou pelo fluxo de corridas.
+4. Enviar mockup se houver desvio em relação ao plano.
 
 ## Prompt sugerido para continuidade
 `Leia o arquivo HISTORICO_CONTINUIDADE_OHOLO.md e continue a implementação da próxima tela mantendo o padrão visual e técnico já aplicado no projeto Oholo.`
