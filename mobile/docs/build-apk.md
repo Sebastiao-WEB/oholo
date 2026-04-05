@@ -14,7 +14,7 @@ Este documento descreve como gerar um ficheiro **.apk** instalável em Android, 
 | Ícone da app (launcher) | `app.json` → `expo.icon`, `expo.android.icon` |
 | Ícone adaptativo (Android 8+) | `app.json` → `expo.android.adaptiveIcon` (mesma imagem + fundo `#0A2547`) |
 | Splash | `app.json` → `expo.splash` |
-| ID da app Android | `expo.android.package` → `com.oholo.app` |
+| ID da app Android | `expo.android.package` (ver `app.json`) |
 | Perfil APK | `eas.json` → perfil `apk` (`buildType: apk`) |
 | Script npm | `package.json` → `npm run build:apk` |
 
@@ -94,6 +94,24 @@ O APK costuma ficar em:
 - O Expo espera sobretudo uma imagem **quadrada**; o ideal para lojas é **1024×1024 px** em PNG.
 - Ícones **adaptativos** cortam as margens: convém o logótipo estar **centrado** na imagem.
 - Se o ficheiro `icon.png` for muito pesado, considera comprimir sem perder legibilidade.
+
+---
+
+## Problema: nome “mobile” ou ícone do robô Android
+
+Isto acontece quando a pasta **`android/`** no repositório é **antiga**: foi gerada antes de corrigires `expo.name` e os ícones no `app.json`, ou com base no `name` do `package.json` (`"mobile"`).
+
+O **EAS Build** usa o `android/` commitado; não volta a gerar ícones só a partir do `app.json` se essa pasta já existir com valores errados.
+
+**Correcção (na pasta `mobile`):**
+
+```bash
+CI=1 npx expo prebuild --platform android --clean
+```
+
+Depois **commit** da pasta `android/` actualizada e volta a correr o build (`npm run build:apk`).
+
+O `strings.xml` deve mostrar `app_name` **Oholo** (ou o valor de `expo.name`), e em `res/mipmap-*` devem existir `ic_launcher.webp` gerados a partir de `assets/img/icon.png`.
 
 ---
 

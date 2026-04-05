@@ -1,4 +1,4 @@
-package com.mobile
+package com.owaneconnect.oholo
 
 import android.app.Application
 import android.content.res.Configuration

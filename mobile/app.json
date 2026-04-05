@@ -10,14 +10,17 @@
       "backgroundColor": "#0A2547"
     },
     "android": {
-      "package": "com.oholo.app",
+      "package": "com.owaneconnect.oholo",
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "icon": "./assets/img/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/img/icon.png",
         "backgroundColor": "#0A2547"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -32,6 +35,12 @@
     "scheme": "oholo",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "abc97804-58d5-4147-8910-cd97e5dc67d0"
+      }
     }
   }
 }

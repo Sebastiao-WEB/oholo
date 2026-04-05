@@ -1,4 +1,4 @@
-package com.mobile
+package com.owaneconnect.oholo
 
 import android.os.Build
 import android.os.Bundle
