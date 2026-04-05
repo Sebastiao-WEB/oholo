@@ -4,7 +4,7 @@
 - Projeto: `Oholo` (app mobile)
 - Stack: React Native + Expo + Expo Router
 - Mapa: OpenStreetMap (`UrlTile`) + OSRM para rotas
-- Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída)
+- Foco implementado: fluxo completo de corridas (pedido -> confirmação -> busca de motorista -> motorista chegando -> corrida em progresso -> corrida concluída) e histórico de atividades (lista + detalhe)
 - Extensão de telas: `.jsx`
 
 ## Paleta de cores aplicada
@@ -23,6 +23,9 @@
 - `app/otp.jsx`
 - `app/reset-password.jsx`
 - `app/(tabs)/index.jsx` (Home)
+- `app/(tabs)/activities.jsx` (lista de atividades: pesquisa, filtros, dados mock)
+- `app/activity-detail.jsx` (detalhe de uma atividade; navegação a partir da lista)
+- `data/mockActivities.js` (dados mock partilhados entre lista e detalhe)
 - `app/ride-request.jsx`
 - `app/ride-confirm.jsx`
 - `app/ride-searching.jsx`
@@ -37,6 +40,10 @@
 4. Vai para `ride-in-progress` (motorista indo até o ponto de origem, com ETA regressivo).
 5. Vai para `ride-trip-progress` (corrida em andamento de origem até destino, com ETA regressivo).
 6. Vai para `ride-completed` (resumo final da viagem).
+
+## Fluxo de atividades (histórico)
+- Aba **Atividades**: lista com filtros (Todas / Corridas / Delivery / Bilhetes) e pesquisa.
+- Toque num item abre `activity-detail` com `params.id`; dados vêm de `data/mockActivities.js` até existir API.
 
 ## Comportamento de tempo (dev x produção)
 - Em `ride-in-progress.jsx`:
