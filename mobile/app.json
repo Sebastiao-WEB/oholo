@@ -1,10 +1,23 @@
 {
   "expo": {
-    "name": "oholo",
+    "name": "Oholo",
     "slug": "oholo",
     "version": "1.0.0",
+    "icon": "./assets/img/icon.png",
+    "splash": {
+      "image": "./assets/img/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A2547"
+    },
     "android": {
-      "softwareKeyboardLayoutMode": "resize"
+      "package": "com.oholo.app",
+      "versionCode": 1,
+      "softwareKeyboardLayoutMode": "resize",
+      "icon": "./assets/img/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/img/icon.png",
+        "backgroundColor": "#0A2547"
+      }
     },
     "plugins": [
       "expo-router",
