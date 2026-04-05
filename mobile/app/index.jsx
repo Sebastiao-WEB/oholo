@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native';
 
 import { getFirstSync, initLocalDatabase } from '../db';
 import { isOnboardingCompleted } from '../utils/onboardingStorage';
@@ -16,6 +16,58 @@ const COLORS = {
 
 export default function SplashScreen() {
   const router = useRouter();
+  const logoScale = useRef(new Animated.Value(0.8)).current;
+  const titleScale = useRef(new Animated.Value(1.14)).current;
+  const logoSpin = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const zoomLoop = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(logoScale, {
+            toValue: 1.14,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(titleScale, {
+            toValue: 0.8,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(logoScale, {
+            toValue: 0.8,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(titleScale, {
+            toValue: 1.14,
+            duration: 900,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+    const spinLoop = Animated.loop(
+      Animated.timing(logoSpin, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    zoomLoop.start();
+    spinLoop.start();
+    return () => {
+      zoomLoop.stop();
+      spinLoop.stop();
+    };
+  }, [logoScale, titleScale, logoSpin]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -48,10 +100,15 @@ export default function SplashScreen() {
 
         router.replace('/login');
       })();
-    }, 2500);
+    }, 7500);
 
     return () => clearTimeout(timer);
   }, [router]);
+
+  const logoRotation = logoSpin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   return (
     <View style={styles.container}>
@@ -64,8 +121,19 @@ export default function SplashScreen() {
       <View style={[styles.spark, styles.sparkRight]} />
 
       <View style={styles.brandArea}>
-        <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
-        <Text style={styles.title}>Oholo</Text>
+        <Animated.View
+          style={[
+            styles.logoWrap,
+            {
+              transform: [{ rotate: logoRotation }, { scale: logoScale }],
+            },
+          ]}
+        >
+          <Image source={require('../assets/img/icon.png')} style={styles.logo} resizeMode="contain" />
+        </Animated.View>
+        <Animated.View style={{ transform: [{ scale: titleScale }] }}>
+          <Text style={styles.title}>Oholo</Text>
+        </Animated.View>
       </View>
 
       <View style={styles.footerTextArea}>
@@ -131,10 +199,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: -40,
   },
+  logoWrap: {
+    marginBottom: 10,
+  },
   logo: {
     width: 140,
     height: 140,
-    marginBottom: 10,
   },
   title: {
     color: COLORS.white,
